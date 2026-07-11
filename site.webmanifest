@@ -1,0 +1,16 @@
+{
+    "name": "Doza Healthcare Platform",
+    "short_name": "Doza",
+    "description": "AI-Powered Healthcare Platform",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#7c3aed",
+    "icons": [
+        {
+            "src": "/logo.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ]
+}
