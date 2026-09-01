@@ -1,3 +1,5 @@
+// app/center/dashboard/panels/AppointmentsPanel.tsx
+
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,146 +18,151 @@ import {
   Calendar as CalendarIcon,
   Search,
   Circle,
+  Edit,
+  Trash2,
+  Eye,
+  Calendar,
+  UserCheck,
+  UserX,
+  Activity,
+  FileText,
+  Phone,
+  Mail,
+  MapPin,
+  CalendarDays,
+  ChevronDown,
+  ChevronUp,
+  MoreVertical,
+  Check,
 } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useDashboard } from "../DashboardContext";
 import { poppins, bebasNeue } from "@/app/utils/constants";
 import { cn } from "@/app/utils/utils";
 import { useAppointments } from "../dashboards/hooks/useAppointments";
 import type { Appointment } from "../types/appointment";
 
-// Helper to format time
+// ─── Helpers ────────────────────────────────────────────────────────
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-// Helper to format month-year
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
 const formatMonthYear = (date: Date) =>
   date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-// Skeleton components
-function CalendarSkeleton() {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-      <div className="divide-y divide-slate-200">
-        {[8, 9, 10, 11, 12, 13, 14].map((hour) => (
-          <div key={hour} className="flex flex-col sm:flex-row">
-            <div className="w-full sm:w-20 p-2 bg-slate-50/50 border-b sm:border-b-0 sm:border-r border-slate-200 flex items-center justify-center">
-              <div className="h-4 w-14 bg-slate-200 rounded animate-pulse" />
-            </div>
-            <div className="flex-1 p-2 space-y-2 min-h-[60px]">
-              <div className="h-14 bg-slate-100 rounded-lg animate-pulse" />
-              <div className="h-14 bg-slate-100 rounded-lg animate-pulse" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MonthSkeleton() {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-      <div className="grid grid-cols-7 gap-px bg-slate-200">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="bg-slate-50 p-2 text-center">
-            <div className="h-4 w-8 mx-auto bg-slate-200 rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-px bg-slate-200">
-        {Array.from({ length: 35 }).map((_, idx) => (
-          <div key={idx} className="bg-white p-2 h-24">
-            <div className="h-4 w-6 bg-slate-200 rounded animate-pulse" />
-            <div className="mt-1 h-3 w-8 bg-slate-200 rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ListSkeleton() {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-      <div className="divide-y divide-slate-200">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3"
-          >
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="w-10 h-10 bg-slate-200 rounded-full animate-pulse" />
-              <div className="space-y-2 flex-1">
-                <div className="h-4 w-32 bg-slate-200 rounded animate-pulse" />
-                <div className="h-3 w-24 bg-slate-200 rounded animate-pulse" />
-              </div>
-            </div>
-            <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-              <div className="h-4 w-16 bg-slate-200 rounded animate-pulse" />
-              <div className="h-6 w-20 bg-slate-200 rounded-full animate-pulse" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Status badge component with better contrast
-const StatusBadge = ({ status }: { status: string }) => {
-  const config: Record<string, { color: string; icon: any; label: string }> = {
-    scheduled: {
-      color: "bg-blue-100 text-blue-700",
-      icon: Clock,
-      label: "Scheduled",
-    },
-    confirmed: {
-      color: "bg-emerald-100 text-emerald-700",
-      icon: CheckCircle,
-      label: "Confirmed",
-    },
-    "checked-in": {
-      color: "bg-purple-100 text-purple-700",
-      icon: User,
-      label: "Checked In",
-    },
-    "in-progress": {
-      color: "bg-amber-100 text-amber-700",
-      icon: Stethoscope,
-      label: "In Progress",
-    },
-    completed: {
-      color: "bg-emerald-100 text-emerald-700",
-      icon: CheckCircle,
-      label: "Completed",
-    },
-    cancelled: {
-      color: "bg-rose-100 text-rose-700",
-      icon: XCircle,
-      label: "Cancelled",
-    },
-    "no-show": {
-      color: "bg-slate-100 text-slate-700",
-      icon: AlertCircle,
-      label: "No Show",
-    },
+const getStatusColor = (status: string) => {
+  const map: Record<string, string> = {
+    scheduled: "bg-blue-100 text-blue-700 border-blue-200",
+    confirmed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    "checked-in": "bg-purple-100 text-purple-700 border-purple-200",
+    "in-progress": "bg-amber-100 text-amber-700 border-amber-200",
+    completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    cancelled: "bg-rose-100 text-rose-700 border-rose-200",
+    "no-show": "bg-slate-100 text-slate-700 border-slate-200",
   };
-  const { color, icon: Icon, label } = config[status] || config.scheduled;
+  return map[status] || "bg-slate-100 text-slate-700 border-slate-200";
+};
+
+const getStatusIcon = (status: string) => {
+  const map: Record<string, any> = {
+    scheduled: Clock,
+    confirmed: CheckCircle,
+    "checked-in": UserCheck,
+    "in-progress": Activity,
+    completed: Check,
+    cancelled: XCircle,
+    "no-show": UserX,
+  };
+  return map[status] || Clock;
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const Icon = getStatusIcon(status);
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full",
-        color,
+        "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border",
+        getStatusColor(status),
       )}
     >
       <Icon className="w-3 h-3" />
-      {label}
+      {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
 };
 
-// Hook to fetch appointments for a whole month
+// ─── Skeleton Components ──────────────────────────────────────────
+const CalendarSkeleton = () => (
+  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="divide-y divide-slate-200">
+      {[8, 9, 10, 11, 12, 13, 14].map((hour) => (
+        <div key={hour} className="flex flex-col sm:flex-row">
+          <div className="w-full sm:w-20 p-2 bg-slate-50/50 border-b sm:border-b-0 sm:border-r border-slate-200 flex items-center justify-center">
+            <div className="h-4 w-14 bg-slate-200 rounded animate-pulse" />
+          </div>
+          <div className="flex-1 p-2 space-y-2 min-h-[60px]">
+            <div className="h-14 bg-slate-100 rounded-lg animate-pulse" />
+            <div className="h-14 bg-slate-100 rounded-lg animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const MonthSkeleton = () => (
+  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="grid grid-cols-7 gap-px bg-slate-200">
+      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+        <div key={day} className="bg-slate-50 p-2 text-center">
+          <div className="h-4 w-8 mx-auto bg-slate-200 rounded animate-pulse" />
+        </div>
+      ))}
+    </div>
+    <div className="grid grid-cols-7 gap-px bg-slate-200">
+      {Array.from({ length: 35 }).map((_, idx) => (
+        <div key={idx} className="bg-white p-2 h-24">
+          <div className="h-4 w-6 bg-slate-200 rounded animate-pulse" />
+          <div className="mt-1 h-3 w-8 bg-slate-200 rounded animate-pulse" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const ListSkeleton = () => (
+  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="divide-y divide-slate-200">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3"
+        >
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="w-10 h-10 bg-slate-200 rounded-full animate-pulse" />
+            <div className="space-y-2 flex-1">
+              <div className="h-4 w-32 bg-slate-200 rounded animate-pulse" />
+              <div className="h-3 w-24 bg-slate-200 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="h-4 w-16 bg-slate-200 rounded animate-pulse" />
+            <div className="h-6 w-20 bg-slate-200 rounded-full animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ─── Hook: Month Appointments ─────────────────────────────────────
 function useMonthAppointments(
   centerId: string | undefined,
   month: string,
@@ -192,6 +199,173 @@ function useMonthAppointments(
   return { appointments, loading, error };
 }
 
+// ─── Details Panel ─────────────────────────────────────────────────
+function AppointmentDetailsPanel({
+  appointment,
+  onClose,
+  onEdit,
+  onCancel,
+  onRefresh,
+}: {
+  appointment: Appointment | null;
+  onClose: () => void;
+  onEdit: () => void;
+  onCancel: (id: string) => void;
+  onRefresh: () => void;
+}) {
+  if (!appointment) return null;
+
+  return (
+    <div className="lg:w-96 w-full bg-white border-l border-slate-200/80 p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
+      <div className="flex items-center justify-between mb-6">
+        <h3
+          className={cn(
+            "text-xl font-bold text-slate-800",
+            bebasNeue.className,
+          )}
+        >
+          Appointment Details
+        </h3>
+        <button
+          onClick={onClose}
+          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5 text-slate-500" />
+        </button>
+      </div>
+
+      <div className="space-y-6">
+        {/* Patient */}
+        <div>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            Patient
+          </p>
+          <p className="text-lg font-semibold text-slate-800">
+            {appointment.patientName}
+          </p>
+          {appointment.patientPhone && (
+            <p className="text-sm text-slate-600 flex items-center gap-1 mt-0.5">
+              <Phone className="w-3.5 h-3.5" /> {appointment.patientPhone}
+            </p>
+          )}
+        </div>
+
+        {/* Status */}
+        <div>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            Status
+          </p>
+          <div className="mt-1">
+            <StatusBadge status={appointment.status} />
+          </div>
+        </div>
+
+        {/* Type & Title */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Type
+            </p>
+            <p className="text-sm font-medium text-slate-800 capitalize">
+              {appointment.type}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Title
+            </p>
+            <p className="text-sm font-medium text-slate-800">
+              {appointment.title || "—"}
+            </p>
+          </div>
+        </div>
+
+        {/* Time */}
+        <div>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            Time
+          </p>
+          <div className="mt-1 space-y-1">
+            <p className="text-sm text-slate-700">
+              <CalendarDays className="w-4 h-4 inline mr-2" />
+              {formatDate(appointment.startTime)}
+            </p>
+            <p className="text-sm text-slate-700">
+              <Clock className="w-4 h-4 inline mr-2" />
+              {formatTime(appointment.startTime)} –{" "}
+              {formatTime(appointment.endTime)}
+            </p>
+            <p className="text-xs text-slate-500">
+              Duration: {appointment.duration || 30} minutes
+            </p>
+          </div>
+        </div>
+
+        {/* Notes */}
+        {appointment.notes && (
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Notes
+            </p>
+            <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 mt-1">
+              {appointment.notes}
+            </p>
+          </div>
+        )}
+
+        {/* Cancellation Reason */}
+        {appointment.cancellationReason && (
+          <div>
+            <p className="text-xs font-medium text-rose-500 uppercase tracking-wider">
+              Cancellation Reason
+            </p>
+            <p className="text-sm text-rose-600 bg-rose-50 p-3 rounded-lg border border-rose-200 mt-1">
+              {appointment.cancellationReason}
+            </p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="border-t border-slate-200/80 pt-4 space-y-2">
+          {appointment.status !== "cancelled" &&
+            appointment.status !== "completed" && (
+              <>
+                <button
+                  onClick={onEdit}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  <Edit className="w-4 h-4" /> Edit Appointment
+                </button>
+                <button
+                  onClick={() => onCancel(appointment.id)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  <XCircle className="w-4 h-4" /> Cancel Appointment
+                </button>
+              </>
+            )}
+          <button
+            onClick={onClose}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Eye className="w-4 h-4" /> Close
+          </button>
+        </div>
+
+        {/* Metadata */}
+        <div className="text-xs text-slate-400 space-y-0.5 border-t border-slate-200/60 pt-4">
+          <p>Created: {new Date(appointment.createdAt).toLocaleString()}</p>
+          <p>
+            Last updated: {new Date(appointment.updatedAt).toLocaleString()}
+          </p>
+          <p>ID: {appointment.id.slice(0, 8)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────
 export default function AppointmentsPanel() {
   const { center, user } = useDashboard();
   const [view, setView] = useState<"calendar" | "list" | "month">("calendar");
@@ -202,11 +376,12 @@ export default function AppointmentsPanel() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Daily appointments
   const { appointments: dailyAppointments, loading: dailyLoading } =
@@ -222,11 +397,26 @@ export default function AppointmentsPanel() {
     error: monthError,
   } = useMonthAppointments(center?.id, monthString, user?.id);
 
-  // Filter daily appointments
+  // Apply filters & search to daily appointments
   const filteredDailyAppointments = useMemo(() => {
-    if (filterStatus === "all") return dailyAppointments;
-    return dailyAppointments.filter((a) => a.status === filterStatus);
-  }, [dailyAppointments, filterStatus]);
+    let filtered = dailyAppointments;
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((a) => a.status === filterStatus);
+    }
+    if (filterType !== "all") {
+      filtered = filtered.filter((a) => a.type === filterType);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (a) =>
+          a.patientName.toLowerCase().includes(q) ||
+          a.title?.toLowerCase().includes(q) ||
+          a.patientPhone?.includes(q),
+      );
+    }
+    return filtered;
+  }, [dailyAppointments, filterStatus, filterType, searchQuery]);
 
   // Time slots for calendar view
   const timeSlots = useMemo(() => {
@@ -240,6 +430,12 @@ export default function AppointmentsPanel() {
         const slot = slots.find((s) => s.hour === hour);
         if (slot) slot.apps.push(app);
       }
+    });
+    slots.forEach((slot) => {
+      slot.apps.sort(
+        (a, b) =>
+          new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+      );
     });
     return slots;
   }, [filteredDailyAppointments]);
@@ -288,17 +484,24 @@ export default function AppointmentsPanel() {
     return map;
   }, [monthAppointments]);
 
-  // Handlers
+  // ─── Handlers ──────────────────────────────────────────────────────
   const handlePreviousDay = () => {
     const date = new Date(selectedDate);
     date.setDate(date.getDate() - 1);
     setSelectedDate(date.toISOString().split("T")[0]);
+    setSelectedAppointment(null);
   };
 
   const handleNextDay = () => {
     const date = new Date(selectedDate);
     date.setDate(date.getDate() + 1);
     setSelectedDate(date.toISOString().split("T")[0]);
+    setSelectedAppointment(null);
+  };
+
+  const handleGoToday = () => {
+    setSelectedDate(new Date().toISOString().split("T")[0]);
+    setSelectedAppointment(null);
   };
 
   const handlePreviousMonth = () => {
@@ -311,6 +514,14 @@ export default function AppointmentsPanel() {
     setSelectedMonth(
       new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1),
     );
+  };
+
+  const handleSelectAppointment = (app: Appointment) => {
+    setSelectedAppointment(app);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedAppointment(null);
   };
 
   const handleCancel = async () => {
@@ -333,15 +544,21 @@ export default function AppointmentsPanel() {
       const data = await res.json();
       if (data.success) {
         setRefreshKey((prev) => prev + 1);
+        setSelectedAppointment(null);
+        setShowCancelModal(null);
+        setCancelReason("");
       } else {
         alert(data.error || "Failed to cancel appointment");
       }
     } catch (err) {
       console.error(err);
       alert("An error occurred while cancelling");
-    } finally {
-      setShowCancelModal(null);
-      setCancelReason("");
+    }
+  };
+
+  const handleEditAppointment = () => {
+    if (selectedAppointment) {
+      setShowAddModal(true);
     }
   };
 
@@ -365,6 +582,7 @@ export default function AppointmentsPanel() {
       if (result.success) {
         setShowAddModal(false);
         setRefreshKey((prev) => prev + 1);
+        setSelectedAppointment(null);
       } else {
         alert(result.error || "Failed to create appointment");
       }
@@ -376,13 +594,14 @@ export default function AppointmentsPanel() {
 
   const loading = view === "month" ? monthLoading : dailyLoading;
 
-  // Determine which skeleton to show
+  // ─── Render Skeleton ──────────────────────────────────────────────
   const renderSkeleton = () => {
     if (view === "calendar") return <CalendarSkeleton />;
     if (view === "month") return <MonthSkeleton />;
     return <ListSkeleton />;
   };
 
+  // ─── Render ────────────────────────────────────────────────────────
   return (
     <div className={cn("space-y-6 pb-20 px-4 sm:px-0", poppins.className)}>
       {/* Header */}
@@ -428,7 +647,7 @@ export default function AppointmentsPanel() {
       </div>
 
       {/* Navigation & Filters */}
-      {view === "calendar" && (
+      {view !== "month" && (
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
@@ -440,12 +659,7 @@ export default function AppointmentsPanel() {
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
               <h2 className="text-base sm:text-lg font-semibold text-slate-800">
-                {new Date(selectedDate).toLocaleDateString("en-US", {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
+                {formatDate(selectedDate)}
               </h2>
               <button
                 onClick={handleNextDay}
@@ -454,11 +668,27 @@ export default function AppointmentsPanel() {
               >
                 <ChevronRight className="w-5 h-5 text-slate-600" />
               </button>
+              <button
+                onClick={handleGoToday}
+                className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
+              >
+                Today
+              </button>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+              <div className="relative flex-1 sm:flex-none">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search patient..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 bg-white w-full sm:w-48"
+                />
+              </div>
               <Filter className="w-4 h-4 text-slate-400 flex-shrink-0" />
               <select
-                className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 bg-white"
+                className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 bg-white"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -470,6 +700,20 @@ export default function AppointmentsPanel() {
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="no-show">No Show</option>
+              </select>
+              <select
+                className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 bg-white"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                <option value="checkup">Checkup</option>
+                <option value="consultation">Consultation</option>
+                <option value="follow-up">Follow-up</option>
+                <option value="emergency">Emergency</option>
+                <option value="procedure">Procedure</option>
+                <option value="test">Test</option>
+                <option value="other">Other</option>
               </select>
             </div>
           </div>
@@ -506,215 +750,229 @@ export default function AppointmentsPanel() {
         </div>
       )}
 
-      {view === "list" && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold text-slate-800">
-              {new Date(selectedDate).toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </h2>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Filter className="w-4 h-4 text-slate-400 flex-shrink-0" />
-              <select
-                className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 bg-white"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="checked-in">Checked In</option>
-                <option value="in-progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no-show">No Show</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Content */}
-      {loading ? (
-        renderSkeleton()
-      ) : (
-        <>
-          {view === "calendar" && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-              <div className="divide-y divide-slate-200 max-h-[600px] overflow-y-auto">
-                {timeSlots.map(({ hour, apps }) => (
-                  <div
-                    key={hour}
-                    className="flex flex-col sm:flex-row hover:bg-emerald-50/30 transition-colors duration-150"
-                  >
-                    <div className="w-full sm:w-20 p-2 text-sm text-slate-600 border-b sm:border-b-0 sm:border-r border-slate-200 bg-slate-50/50 sm:bg-transparent flex items-center justify-center font-medium">
-                      {hour % 12 === 0 ? 12 : hour % 12}:00{" "}
-                      {hour < 12 ? "AM" : "PM"}
-                    </div>
-                    <div className="flex-1 p-2 space-y-1.5 min-h-[60px]">
-                      {apps.length === 0 ? (
-                        <span className="text-xs text-slate-400 italic block text-center sm:text-left">
-                          — No appointments —
-                        </span>
-                      ) : (
-                        apps.map((app) => (
-                          <div
-                            key={app.id}
-                            onClick={() => {
-                              setSelectedAppointment(app);
-                              setShowDetailsModal(true);
-                            }}
-                            className="p-2.5 bg-emerald-50 border border-emerald-200/80 rounded-xl cursor-pointer shadow-sm hover:shadow-md hover:border-emerald-300 transition-all"
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-1">
-                              <div>
-                                <p className="font-medium text-slate-800 text-sm">
-                                  {app.patientName}
-                                </p>
-                                <p className="text-xs text-slate-600">
-                                  {app.title}
+      {/* ─── Main Content ───────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Calendar/List Area */}
+        <div className="flex-1 min-w-0">
+          {loading ? (
+            renderSkeleton()
+          ) : (
+            <>
+              {view === "calendar" && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                  <div className="divide-y divide-slate-200 max-h-[600px] overflow-y-auto">
+                    {timeSlots.map(({ hour, apps }) => (
+                      <div
+                        key={hour}
+                        className="flex flex-col sm:flex-row hover:bg-emerald-50/30 transition-colors duration-150"
+                      >
+                        <div className="w-full sm:w-20 p-2 text-sm text-slate-600 border-b sm:border-b-0 sm:border-r border-slate-200 bg-slate-50/50 sm:bg-transparent flex items-center justify-center font-medium">
+                          {hour % 12 === 0 ? 12 : hour % 12}:00{" "}
+                          {hour < 12 ? "AM" : "PM"}
+                        </div>
+                        <div className="flex-1 p-2 space-y-1.5 min-h-[60px]">
+                          {apps.length === 0 ? (
+                            <span className="text-xs text-slate-400 italic block text-center sm:text-left">
+                              — No appointments —
+                            </span>
+                          ) : (
+                            apps.map((app) => (
+                              <div
+                                key={app.id}
+                                onClick={() => handleSelectAppointment(app)}
+                                className={cn(
+                                  "p-2.5 rounded-xl cursor-pointer shadow-sm hover:shadow-md transition-all border",
+                                  selectedAppointment?.id === app.id
+                                    ? "bg-emerald-50 border-emerald-300 ring-1 ring-emerald-400"
+                                    : "bg-emerald-50 border-emerald-200/80 hover:border-emerald-300",
+                                )}
+                              >
+                                <div className="flex flex-wrap items-start justify-between gap-1">
+                                  <div>
+                                    <p className="font-medium text-slate-800 text-sm">
+                                      {app.patientName}
+                                    </p>
+                                    <p className="text-xs text-slate-600">
+                                      {app.title}
+                                    </p>
+                                  </div>
+                                  <StatusBadge status={app.status} />
+                                </div>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  <time dateTime={app.startTime}>
+                                    {formatTime(app.startTime)}
+                                  </time>{" "}
+                                  –{" "}
+                                  <time dateTime={app.endTime}>
+                                    {formatTime(app.endTime)}
+                                  </time>
+                                  {app.type === "follow-up" && (
+                                    <span className="ml-2 text-[10px] font-medium bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+                                      Follow-up
+                                    </span>
+                                  )}
                                 </p>
                               </div>
-                              <StatusBadge status={app.status} />
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                              <time dateTime={app.startTime}>
-                                {formatTime(app.startTime)}
-                              </time>{" "}
-                              –{" "}
-                              <time dateTime={app.endTime}>
-                                {formatTime(app.endTime)}
-                              </time>
-                            </p>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {view === "month" && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-              <div className="grid grid-cols-7 gap-px bg-slate-200">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                  (day) => (
-                    <div
-                      key={day}
-                      className="bg-slate-50/80 p-2 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider"
-                    >
-                      {day}
-                    </div>
-                  ),
-                )}
-              </div>
-              <div className="grid grid-cols-7 gap-px bg-slate-200">
-                {monthGrid.flat().map((date, idx) => {
-                  if (!date) {
-                    return (
-                      <div key={`empty-${idx}`} className="bg-white p-2 h-24" />
-                    );
-                  }
-                  const dateStr = date.toISOString().split("T")[0];
-                  const dayAppointments = appointmentsByDate.get(dateStr) || [];
-                  const hasAppointments = dayAppointments.length > 0;
-                  const isToday =
-                    dateStr === new Date().toISOString().split("T")[0];
-                  return (
-                    <div
-                      key={dateStr}
-                      onClick={() => {
-                        if (hasAppointments) {
-                          setSelectedDate(dateStr);
-                          setView("calendar");
-                        }
-                      }}
-                      className={cn(
-                        "bg-white p-2 h-24 cursor-pointer hover:bg-emerald-50/50 transition flex flex-col",
-                        hasAppointments ? "font-medium" : "",
-                        isToday ? "bg-emerald-50/30" : "",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "text-sm text-slate-700",
-                          isToday && "font-bold text-emerald-600",
-                        )}
-                      >
-                        {date.getDate()}
-                      </span>
-                      {hasAppointments && (
-                        <div className="mt-1 flex items-center gap-1 text-emerald-600">
-                          <Circle className="w-2 h-2 fill-emerald-600" />
-                          <span className="text-xs">
-                            {dayAppointments.length}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {view === "list" && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-              {filteredDailyAppointments.length === 0 ? (
-                <div className="p-12 text-center">
-                  <CalendarIcon className="mx-auto h-12 w-12 text-slate-300" />
-                  <p className="mt-2 text-sm text-slate-500">
-                    No appointments scheduled for this day.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-200">
-                  {filteredDailyAppointments.map((app) => (
-                    <div
-                      key={app.id}
-                      onClick={() => {
-                        setSelectedAppointment(app);
-                        setShowDetailsModal(true);
-                      }}
-                      className="p-4 hover:bg-emerald-50/30 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <User className="w-5 h-5 text-emerald-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-800 truncate">
-                            {app.patientName}
-                          </p>
-                          <p className="text-sm text-slate-600 truncate">
-                            {app.title}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 ml-13 sm:ml-0 justify-between sm:justify-end w-full sm:w-auto">
-                        <span className="text-sm text-slate-600 whitespace-nowrap">
-                          <time dateTime={app.startTime}>
-                            {formatTime(app.startTime)}
-                          </time>
-                        </span>
-                        <StatusBadge status={app.status} />
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
-            </div>
-          )}
-        </>
-      )}
 
-      {/* Modals */}
+              {view === "month" && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                  <div className="grid grid-cols-7 gap-px bg-slate-200">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (day) => (
+                        <div
+                          key={day}
+                          className="bg-slate-50/80 p-2 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider"
+                        >
+                          {day}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                  <div className="grid grid-cols-7 gap-px bg-slate-200">
+                    {monthGrid.flat().map((date, idx) => {
+                      if (!date) {
+                        return (
+                          <div
+                            key={`empty-${idx}`}
+                            className="bg-white p-2 h-24"
+                          />
+                        );
+                      }
+                      const dateStr = date.toISOString().split("T")[0];
+                      const dayAppointments =
+                        appointmentsByDate.get(dateStr) || [];
+                      const hasAppointments = dayAppointments.length > 0;
+                      const isToday =
+                        dateStr === new Date().toISOString().split("T")[0];
+                      return (
+                        <div
+                          key={dateStr}
+                          onClick={() => {
+                            setSelectedDate(dateStr);
+                            setView("calendar");
+                          }}
+                          className={cn(
+                            "bg-white p-2 h-24 cursor-pointer hover:bg-emerald-50/50 transition flex flex-col",
+                            hasAppointments ? "font-medium" : "",
+                            isToday ? "bg-emerald-50/30" : "",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "text-sm text-slate-700",
+                              isToday && "font-bold text-emerald-600",
+                            )}
+                          >
+                            {date.getDate()}
+                          </span>
+                          {hasAppointments && (
+                            <div className="mt-1 flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1 text-emerald-600">
+                                <Circle className="w-2 h-2 fill-emerald-600" />
+                                <span className="text-xs">
+                                  {dayAppointments.length}
+                                </span>
+                              </div>
+                              {dayAppointments.slice(0, 2).map((app) => (
+                                <div
+                                  key={app.id}
+                                  className="text-[8px] text-slate-500 truncate"
+                                >
+                                  {formatTime(app.startTime)} {app.patientName}
+                                </div>
+                              ))}
+                              {dayAppointments.length > 2 && (
+                                <div className="text-[8px] text-slate-400">
+                                  +{dayAppointments.length - 2} more
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {view === "list" && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                  {filteredDailyAppointments.length === 0 ? (
+                    <div className="p-12 text-center">
+                      <CalendarIcon className="mx-auto h-12 w-12 text-slate-300" />
+                      <p className="mt-2 text-sm text-slate-500">
+                        No appointments scheduled for this day.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-200">
+                      {filteredDailyAppointments.map((app) => (
+                        <div
+                          key={app.id}
+                          onClick={() => handleSelectAppointment(app)}
+                          className={cn(
+                            "p-4 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:bg-emerald-50/30",
+                            selectedAppointment?.id === app.id &&
+                              "bg-emerald-50/50",
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                              <User className="w-5 h-5 text-emerald-600" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-800 truncate">
+                                {app.patientName}
+                              </p>
+                              <p className="text-sm text-slate-600 truncate">
+                                {app.title}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 ml-13 sm:ml-0 justify-between sm:justify-end w-full sm:w-auto">
+                            <span className="text-sm text-slate-600 whitespace-nowrap">
+                              <time dateTime={app.startTime}>
+                                {formatTime(app.startTime)}
+                              </time>
+                            </span>
+                            <StatusBadge status={app.status} />
+                            {app.type === "follow-up" && (
+                              <span className="text-[10px] font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                Follow-up
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* ─── Details Panel ─────────────────────────────────────────── */}
+        {selectedAppointment && (
+          <AppointmentDetailsPanel
+            appointment={selectedAppointment}
+            onClose={handleCloseDetails}
+            onEdit={handleEditAppointment}
+            onCancel={(id) => setShowCancelModal(id)}
+            onRefresh={() => setRefreshKey((prev) => prev + 1)}
+          />
+        )}
+      </div>
+
+      {/* ─── Modals ──────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showAddModal && (
           <AppointmentModal
@@ -723,21 +981,7 @@ export default function AppointmentsPanel() {
             onSave={handleSaveAppointment}
             centerId={center?.id}
             userId={user?.id}
-          />
-        )}
-
-        {showDetailsModal && selectedAppointment && (
-          <AppointmentDetailsModal
-            key="details-modal"
-            appointment={selectedAppointment}
-            onClose={() => {
-              setShowDetailsModal(false);
-              setSelectedAppointment(null);
-            }}
-            onEdit={() => {
-              setShowAddModal(true);
-            }}
-            onCancel={() => setShowCancelModal(selectedAppointment.id)}
+            initialData={selectedAppointment || undefined}
           />
         )}
 
@@ -755,17 +999,25 @@ export default function AppointmentsPanel() {
   );
 }
 
-// Full Appointment Modal (with inline patient creation)
-function AppointmentModal({ onClose, onSave, centerId, userId }: any) {
+// ─── Appointment Modal (with initialData support) ────────────────
+function AppointmentModal({
+  onClose,
+  onSave,
+  centerId,
+  userId,
+  initialData,
+}: any) {
   const [formData, setFormData] = useState({
-    patientId: "",
-    patientName: "",
-    patientPhone: "",
-    title: "",
-    type: "checkup",
-    startTime: "",
-    notes: "",
-    reminders: { email: false, sms: false },
+    patientId: initialData?.patientId || "",
+    patientName: initialData?.patientName || "",
+    patientPhone: initialData?.patientPhone || "",
+    title: initialData?.title || "",
+    type: initialData?.type || "checkup",
+    startTime: initialData?.startTime
+      ? new Date(initialData.startTime).toISOString().slice(0, 16)
+      : "",
+    notes: initialData?.notes || "",
+    reminders: initialData?.reminders || { email: false, sms: false },
   });
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -813,8 +1065,7 @@ function AppointmentModal({ onClose, onSave, centerId, userId }: any) {
   };
 
   const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const start = e.target.value;
-    setFormData({ ...formData, startTime: start });
+    setFormData({ ...formData, startTime: e.target.value });
   };
 
   const handleCreatePatient = async (e: React.FormEvent) => {
@@ -866,14 +1117,24 @@ function AppointmentModal({ onClose, onSave, centerId, userId }: any) {
       return;
     }
     setLoading(true);
+
+    // Convert datetime-local (YYYY-MM-DDTHH:mm) to full ISO string
+    const isoStartTime = new Date(formData.startTime).toISOString();
+    const isoEndTime = new Date(
+      new Date(formData.startTime).getTime() + 30 * 60000,
+    ).toISOString();
+
     const dataToSave = {
       ...formData,
-      endTime: getEndTime(formData.startTime),
+      startTime: isoStartTime,
+      endTime: isoEndTime,
     };
+
     await onSave(dataToSave);
     setLoading(false);
   };
 
+  // ─── Modal UI ──────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
@@ -889,7 +1150,7 @@ function AppointmentModal({ onClose, onSave, centerId, userId }: any) {
               bebasNeue.className,
             )}
           >
-            New Appointment
+            {initialData ? "Edit Appointment" : "New Appointment"}
           </h2>
           <button
             onClick={onClose}
@@ -1155,7 +1416,7 @@ function AppointmentModal({ onClose, onSave, centerId, userId }: any) {
               {loading && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               )}
-              Create Appointment
+              {initialData ? "Update" : "Create"} Appointment
             </button>
           </div>
         </form>
@@ -1164,112 +1425,7 @@ function AppointmentModal({ onClose, onSave, centerId, userId }: any) {
   );
 }
 
-// Details Modal
-function AppointmentDetailsModal({
-  appointment,
-  onClose,
-  onEdit,
-  onCancel,
-}: any) {
-  return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200/80"
-      >
-        <div className="sticky top-0 bg-white/90 backdrop-blur-sm border-b border-slate-200/80 px-6 py-4 flex justify-between items-center rounded-t-2xl">
-          <h2
-            className={cn(
-              "text-xl font-bold text-slate-800",
-              bebasNeue.className,
-            )}
-          >
-            Appointment Details
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
-          >
-            <X className="w-5 h-5 text-slate-500" />
-          </button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-slate-500">Patient</p>
-              <p className="font-medium text-slate-800">
-                {appointment.patientName}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Type</p>
-              <p className="capitalize text-slate-700">{appointment.type}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Status</p>
-              <StatusBadge status={appointment.status} />
-            </div>
-            <div className="sm:col-span-2">
-              <p className="text-xs text-slate-500">Time</p>
-              <p className="text-slate-700">
-                <time dateTime={appointment.startTime}>
-                  {new Date(appointment.startTime).toLocaleString()}
-                </time>{" "}
-                –{" "}
-                <time dateTime={appointment.endTime}>
-                  {formatTime(appointment.endTime)}
-                </time>
-              </p>
-            </div>
-            {appointment.notes && (
-              <div className="sm:col-span-2">
-                <p className="text-xs text-slate-500">Notes</p>
-                <p className="text-sm text-slate-700">{appointment.notes}</p>
-              </div>
-            )}
-            {appointment.cancellationReason && (
-              <div className="sm:col-span-2">
-                <p className="text-xs text-slate-500">Cancellation Reason</p>
-                <p className="text-sm text-rose-600">
-                  {appointment.cancellationReason}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="border-t border-slate-200/80 p-4 flex flex-col sm:flex-row justify-end gap-3">
-          {appointment.status !== "cancelled" &&
-            appointment.status !== "completed" && (
-              <>
-                <button
-                  onClick={onEdit}
-                  className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={onCancel}
-                  className="px-5 py-2.5 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors text-sm font-medium"
-                >
-                  Cancel
-                </button>
-              </>
-            )}
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors text-sm font-medium"
-          >
-            Close
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-// Cancel Reason Modal
+// ─── Cancel Reason Modal ──────────────────────────────────────────
 function CancelReasonModal({ onConfirm, onClose, reason, setReason }: any) {
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">

@@ -1,5 +1,3 @@
-// app/center/dashboard/components/NotificationBell.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,12 +8,11 @@ import { cn } from "@/app/utils/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function NotificationBell() {
-  const { center, user } = useDashboard();
+  const { center, user, setActivePanel } = useDashboard();
   const { notifications, unreadCount, loading, refetch, markAsRead } =
     useNotifications(center?.id);
   const [open, setOpen] = useState(false);
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       if (!open) refetch();
@@ -23,10 +20,41 @@ export default function NotificationBell() {
     return () => clearInterval(interval);
   }, [refetch, open]);
 
-  // Refetch when bell is opened
   const handleToggle = () => {
     setOpen(!open);
     if (!open) refetch();
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    markAsRead(notification.id);
+    if (notification.link) {
+      setActivePanel(notification.link);
+    }
+    setOpen(false);
+  };
+
+  const handleClaim = async (notification: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!center?.id || !user?.id) return;
+    try {
+      const res = await fetch(
+        `/api/centers/${center.id}/appointments/${notification.relatedId}/claim`,
+        {
+          method: "PATCH",
+          headers: { "x-user-id": user.id },
+        },
+      );
+      if (res.ok) {
+        refetch();
+        alert("Appointment claimed successfully!");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to claim appointment");
+      }
+    } catch (err) {
+      console.error("Claim error", err);
+      alert("Network error. Please try again.");
+    }
   };
 
   if (loading && !notifications.length) {
@@ -83,9 +111,10 @@ export default function NotificationBell() {
                   <div
                     key={n.id}
                     className={cn(
-                      "p-3 hover:bg-slate-50 transition flex items-start gap-2",
+                      "p-3 hover:bg-slate-50 transition flex items-start gap-2 cursor-pointer",
                       !n.read && "bg-blue-50/50",
                     )}
+                    onClick={() => handleNotificationClick(n)}
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-900">
@@ -97,10 +126,26 @@ export default function NotificationBell() {
                       <span className="text-[10px] text-slate-400">
                         {new Date(n.createdAt).toLocaleString()}
                       </span>
+
+                      {/* Claim button for unclaimed appointments */}
+                      {!n.read &&
+                        n.link === "appointments" &&
+                        n.relatedId &&
+                        !n.assignedTo && (
+                          <button
+                            onClick={(e) => handleClaim(n, e)}
+                            className="mt-1 text-xs font-medium bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200 transition"
+                          >
+                            Claim
+                          </button>
+                        )}
                     </div>
                     {!n.read && (
                       <button
-                        onClick={() => markAsRead(n.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(n.id);
+                        }}
                         className="mt-1 p-1 text-blue-600 hover:text-blue-800 transition"
                         title="Mark as read"
                       >

@@ -26,6 +26,7 @@ export interface Patient {
     | "waiting"
     | "in-treatment"
     | "discharged";
+  dozaUserId?: string;
   registeredAt: string;
   registeredBy: string;
 
@@ -52,6 +53,7 @@ export interface Patient {
   diagnoses?: string[];
   allergies?: string[];
   prescriptions?: Array<{
+    price: number;
     medication: string;
     dosage: string;
     frequency: string;
@@ -71,6 +73,9 @@ export interface Patient {
     pharmacistNotes?: string;
     dispensedAt?: string;
     dispensedById?: string;
+    dispensedTotal?: number;
+    totalQuantity?: number;
+    source?: "hospital" | "external";
   }>;
   billingInfo?: {
     insuranceProvider?: string;
@@ -86,6 +91,8 @@ export interface Patient {
   dischargeRequestedAt?: string;
   emergencyContact?: string;
   dischargeSummary?: string;
+  dischargeBy?: string;
+  dischargeReason?: string;
   referral?: {
     toCenterId: string;
     toCenterName: string;

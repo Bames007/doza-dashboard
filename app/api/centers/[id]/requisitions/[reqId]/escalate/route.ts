@@ -48,12 +48,9 @@ export async function POST(
     const oldData = snapshot.val();
 
     // Authorization
-    const isAdmin = [
-      "admin",
-      "owner",
-      "hospital_admin",
-      "center_owner",
-    ].includes(userRole);
+    const isAdmin = ["admin", "owner", "admin", "center_owner"].includes(
+      userRole,
+    );
     const isAssigned = oldData.assignedToUserId === userId;
     const isRoleMatch = oldData.approverRole === userRole;
 

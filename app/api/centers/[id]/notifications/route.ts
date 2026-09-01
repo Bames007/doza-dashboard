@@ -14,6 +14,18 @@ import {
   handleError,
 } from "@/app/lib/apiHelpers";
 
+// ─── Type Guard ─────────────────────────────────────────────────────
+function isNotification(
+  value: unknown,
+): value is { userId: string; [key: string]: any } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "userId" in value &&
+    typeof (value as any).userId === "string"
+  );
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -33,33 +45,23 @@ export async function GET(
     const refPath = `doza_centers/${centerId}/notifications`;
     const snapshot = await get(ref(db, refPath));
     const all = snapshot.exists() ? snapshot.val() : {};
-    type Notification = {
-      id: string;
-      createdAt?: string | number;
-      [k: string]: any;
-    };
 
-    const userNotifications: Notification[] = Object.entries(
-      all as Record<string, unknown>,
-    )
-      .filter(([, val]) => {
-        if (!val || typeof val !== "object") return false;
-        return (val as { userId?: string }).userId === userId;
-      })
-      .map(([id, val]) => ({
-        id,
-        ...(val as Record<string, any>),
-      }));
+    // ✅ Include notifications for this user OR for "center"
+    const userNotifications: Array<{ id: string } & Record<string, any>> = [];
+    for (const [id, val] of Object.entries(all)) {
+      if (isNotification(val)) {
+        if (val.userId === userId || val.userId === "center") {
+          userNotifications.push({ id, ...val });
+        }
+      }
+    }
 
-    userNotifications.sort((a, b) => {
-      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return tb - ta;
-    });
+    userNotifications.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
     cache.set(cacheKey, userNotifications, 30);
     logger.info(
-      `Fetched ${userNotifications.length} notifications for user ${userId}`,
+      { centerId, userId, count: userNotifications.length },
+      "Notifications fetched",
     );
     return NextResponse.json({ success: true, data: userNotifications });
   } catch (error) {

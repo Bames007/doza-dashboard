@@ -4,10 +4,12 @@ import {
   Building,
   Activity,
   SmileIcon,
-  Glasses,
   Pill,
   Stethoscope,
   type LucideIcon,
+  Ambulance,
+  HeartHandshake,
+  LucideGlasses,
 } from "lucide-react";
 import logger from "@/app/utils/logger";
 import type { UserRole, CenterType } from "../type";
@@ -41,7 +43,7 @@ export const roleDashboards: Record<UserRole, DashboardConfig> = {
       "Active Services",
     ],
   },
-  hospital_admin: {
+  admin: {
     features: [
       "Hospital Operations",
       "Staff Coordination",
@@ -181,6 +183,34 @@ export const roleDashboards: Record<UserRole, DashboardConfig> = {
       "Phone Calls",
     ],
   },
+  accountant: {
+    features: [
+      "Financial Reporting",
+      "Billing Management",
+      "Revenue Tracking",
+      "Accounts Reconciliation",
+    ],
+    stats: [
+      "Pending Invoices",
+      "Total Revenue",
+      "Insurance Claims",
+      "Outstanding Balances",
+    ],
+  },
+  hr: {
+    features: [
+      "Employee Management",
+      "Recruitment",
+      "Training & Development",
+      "Performance Evaluation",
+    ],
+    stats: [
+      "Active Employees",
+      "New Hires",
+      "Training Completed",
+      "Performance Reviews",
+    ],
+  },
 };
 
 export const centerTypeConfigs: Record<CenterType, CenterTypeConfig> = {
@@ -266,7 +296,7 @@ export const centerTypeConfigs: Record<CenterType, CenterTypeConfig> = {
       "Optical Products",
       "Contact Lens Fitting",
     ],
-    icon: Glasses,
+    icon: LucideGlasses,
   },
   emergency: {
     primaryColor: "bg-red-600",
@@ -278,7 +308,7 @@ export const centerTypeConfigs: Record<CenterType, CenterTypeConfig> = {
       "Critical Patient Management",
       "24/7 Availability",
     ],
-    icon: Glasses,
+    icon: Ambulance,
   },
   cardiac_center: {
     primaryColor: "bg-blue-600",
@@ -290,7 +320,7 @@ export const centerTypeConfigs: Record<CenterType, CenterTypeConfig> = {
       "Stress Testing",
       "Electrocardiogram",
     ],
-    icon: Glasses,
+    icon: HeartHandshake,
   },
 };
 
@@ -298,7 +328,7 @@ export const centerTypeConfigs: Record<CenterType, CenterTypeConfig> = {
 export const getDisplayRole = (role: UserRole): string => {
   const roleNames: Record<UserRole, string> = {
     super_admin: "Super Administrator",
-    hospital_admin: "Hospital Administrator",
+    admin: "Administrator",
     doctor: "Doctor",
     nurse: "Nurse",
     hospital_nurse: "Hospital Nurse",
@@ -308,6 +338,8 @@ export const getDisplayRole = (role: UserRole): string => {
     pharmacist: "Pharmacist",
     center_owner: "Center Owner",
     center_head: "Center Head",
+    accountant: "Accountant",
+    hr: "Human Resources",
   };
 
   const display = roleNames[role] || role;

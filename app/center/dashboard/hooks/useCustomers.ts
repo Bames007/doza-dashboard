@@ -5,11 +5,11 @@ import { ApiWrapper } from "@/app/utils/apiWrapper";
 export const useCustomers = (
   centerId: string,
   userId: string,
-  apiWrapper: ApiWrapper | null
+  apiWrapper: ApiWrapper | null,
 ) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
+    null,
   );
   const [selectedDozaUser, setSelectedDozaUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +38,7 @@ export const useCustomers = (
       // Fallback: try API wrapper
       try {
         const result = await apiWrapper.get(
-          `/api/centers/${centerId}/customers`
+          `/api/centers/${centerId}/customers`,
         );
         if (result.success) {
           setCustomers(result.data || []);
@@ -68,8 +68,8 @@ export const useCustomers = (
         if (apiWrapper) {
           const result = await apiWrapper.get(
             `/api/doza-users?search=${encodeURIComponent(
-              searchTerm
-            )}&centerId=${centerId}`
+              searchTerm,
+            )}&centerId=${centerId}`,
           );
 
           if (result.success) {
@@ -79,8 +79,8 @@ export const useCustomers = (
           // Fetch directly
           const response = await fetch(
             `/api/doza-users?search=${encodeURIComponent(
-              searchTerm
-            )}&centerId=${centerId}`
+              searchTerm,
+            )}&centerId=${centerId}`,
           );
 
           if (response.ok) {
@@ -96,14 +96,14 @@ export const useCustomers = (
         // If no results from API, try local storage
         if (dozaUsers.length === 0) {
           const localUsers = JSON.parse(
-            localStorage.getItem(`doza_users_${centerId}`) || "[]"
+            localStorage.getItem(`doza/users_${centerId}`) || "[]",
           );
 
           const filtered = localUsers.filter(
             (user: any) =>
               user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
               user.phone?.includes(searchTerm) ||
-              user.dozaCode?.toLowerCase().includes(searchTerm.toLowerCase())
+              user.dozaCode?.toLowerCase().includes(searchTerm.toLowerCase()),
           );
 
           dozaUsers = filtered;
@@ -115,20 +115,20 @@ export const useCustomers = (
 
         // Fallback to local storage
         const localUsers = JSON.parse(
-          localStorage.getItem(`doza_users_${centerId}`) || "[]"
+          localStorage.getItem(`doza/users_${centerId}`) || "[]",
         );
 
         const filtered = localUsers.filter(
           (user: any) =>
             user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.phone?.includes(searchTerm) ||
-            user.dozaCode?.toLowerCase().includes(searchTerm.toLowerCase())
+            user.dozaCode?.toLowerCase().includes(searchTerm.toLowerCase()),
         );
 
         return filtered;
       }
     },
-    [centerId, apiWrapper]
+    [centerId, apiWrapper],
   );
 
   return {

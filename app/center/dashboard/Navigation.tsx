@@ -37,6 +37,8 @@ const Navigation: React.FC<NavigationProps> = ({ isMobile = false }) => {
   const hrefToPanelMap: PanelMap = {
     "/dashboard": "dashboard",
     "/dashboard/facility": "facility-services",
+
+    "/dashboard/doza-requests": "doza-requests",
     "/dashboard/analytics": "analytics",
     "/dashboard/auditlogs": "auditlogs",
     "/dashboard/hospital-prescription": "hospital-prescription",

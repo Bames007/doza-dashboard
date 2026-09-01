@@ -1,4 +1,3 @@
-// app/center/dashboard/panels/NotificationsPanel.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -16,6 +15,15 @@ import {
   MoreVertical,
   CheckCheck,
   Trash2,
+  ChevronRight,
+  User,
+  Mail,
+  Phone,
+  Building,
+  FileText,
+  Stethoscope,
+  Pill,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/app/utils/utils";
 import { bebasNeue, poppins } from "@/app/utils/constants";
@@ -33,17 +41,16 @@ interface Notification {
     | "inventory"
     | "patient"
     | "system"
-    | "reminder";
+    | "reminder"
+    | "prescription"
+    | "test";
   read: boolean;
-  createdAt: string; // ISO date string
+  createdAt: string;
   link?: string;
-}
-
-interface NotificationsResponse {
-  success: boolean;
-  notifications: Notification[];
-  unreadCount: number;
-  error?: string;
+  senderName?: string;
+  senderRole?: string;
+  patientName?: string;
+  relatedId?: string;
 }
 
 // ─── Helper Components ──────────────────────────────────────────────
@@ -60,6 +67,10 @@ const getNotificationIcon = (type: Notification["type"]) => {
       return Users;
     case "reminder":
       return Clock;
+    case "prescription":
+      return Pill;
+    case "test":
+      return FlaskConical;
     default:
       return AlertCircle;
   }
@@ -68,17 +79,21 @@ const getNotificationIcon = (type: Notification["type"]) => {
 const getIconColor = (type: Notification["type"]) => {
   switch (type) {
     case "appointment":
-      return "text-purple-500 bg-purple-50";
+      return "text-purple-500 bg-purple-50 border-purple-200";
     case "message":
-      return "text-blue-500 bg-blue-50";
+      return "text-blue-500 bg-blue-50 border-blue-200";
     case "inventory":
-      return "text-amber-500 bg-amber-50";
+      return "text-amber-500 bg-amber-50 border-amber-200";
     case "patient":
-      return "text-emerald-500 bg-emerald-50";
+      return "text-emerald-500 bg-emerald-50 border-emerald-200";
     case "reminder":
-      return "text-orange-500 bg-orange-50";
+      return "text-orange-500 bg-orange-50 border-orange-200";
+    case "prescription":
+      return "text-rose-500 bg-rose-50 border-rose-200";
+    case "test":
+      return "text-indigo-500 bg-indigo-50 border-indigo-200";
     default:
-      return "text-slate-500 bg-slate-50";
+      return "text-slate-500 bg-slate-50 border-slate-200";
   }
 };
 
@@ -98,6 +113,17 @@ const formatTime = (isoString: string) => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
+const formatFullDate = (isoString: string) => {
+  return new Date(isoString).toLocaleString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 // ─── Main Component ──────────────────────────────────────────────────
 
 export default function NotificationsPanel() {
@@ -106,7 +132,10 @@ export default function NotificationsPanel() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const selectedNotification = notifications.find((n) => n.id === selectedId);
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -118,10 +147,15 @@ export default function NotificationsPanel() {
         headers: { "x-user-id": user?.id || "" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: NotificationsResponse = await res.json();
+      const data = await res.json();
       if (data.success) {
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.unreadCount || 0);
+        setNotifications(data.data || []);
+        setUnreadCount(
+          data.data?.filter((n: Notification) => !n.read).length || 0,
+        );
+        if (data.data?.length > 0 && !selectedId) {
+          setSelectedId(data.data[0].id);
+        }
       } else {
         throw new Error(data.error || "Failed to load notifications");
       }
@@ -136,17 +170,14 @@ export default function NotificationsPanel() {
     fetchNotifications();
   }, [center?.id, user?.id]);
 
-  // Mark a single notification as read
+  // Mark as read
   const markAsRead = async (id: string) => {
     try {
       const res = await fetch(
         `/api/centers/${center?.id}/notifications/${id}`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-id": user?.id || "",
-          },
+          headers: { "x-user-id": user?.id || "" },
           body: JSON.stringify({ read: true }),
         },
       );
@@ -180,7 +211,7 @@ export default function NotificationsPanel() {
     }
   };
 
-  // Clear all notifications
+  // Clear all
   const clearAll = async () => {
     try {
       const res = await fetch(`/api/centers/${center?.id}/notifications`, {
@@ -190,6 +221,7 @@ export default function NotificationsPanel() {
       if (res.ok) {
         setNotifications([]);
         setUnreadCount(0);
+        setSelectedId(null);
         setShowDeleteConfirm(false);
       }
     } catch (err) {
@@ -201,35 +233,25 @@ export default function NotificationsPanel() {
 
   if (loading) {
     return (
-      <div className={cn("space-y-6 pb-20 px-4 sm:px-0", poppins.className)}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="h-9 w-56 bg-slate-200 rounded-lg animate-pulse" />
-            <div className="h-5 w-72 bg-slate-100 rounded animate-pulse mt-1" />
-          </div>
-          <div className="flex gap-2">
-            <div className="h-10 w-32 bg-slate-200 rounded-xl animate-pulse" />
-            <div className="h-10 w-32 bg-slate-200 rounded-xl animate-pulse" />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm animate-pulse"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-slate-200 rounded-xl" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-3/4 bg-slate-200 rounded" />
-                  <div className="h-3 w-1/2 bg-slate-200 rounded" />
-                  <div className="h-3 w-24 bg-slate-200 rounded" />
-                </div>
-                <div className="w-5 h-5 bg-slate-200 rounded-full" />
-              </div>
+      <div
+        className={cn(
+          "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8",
+          poppins.className,
+        )}
+      >
+        <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-6">
+          <div className="h-20 bg-white rounded-2xl animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-4 border border-slate-200/80 h-20 animate-pulse"
+                />
+              ))}
             </div>
-          ))}
+            <div className="lg:col-span-2 bg-white rounded-2xl p-6 h-96 animate-pulse" />
+          </div>
         </div>
       </div>
     );
@@ -239,26 +261,33 @@ export default function NotificationsPanel() {
 
   if (error) {
     return (
-      <div className={cn("space-y-6 pb-20 px-4 sm:px-0", poppins.className)}>
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-4">
-            <AlertCircle className="w-8 h-8 text-rose-500" />
+      <div
+        className={cn(
+          "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8",
+          poppins.className,
+        )}
+      >
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-rose-500" />
+            </div>
+            <h3
+              className={cn(
+                "text-xl font-bold text-slate-800",
+                bebasNeue.className,
+              )}
+            >
+              Failed to load notifications
+            </h3>
+            <p className="text-sm text-slate-500 mt-1 max-w-sm">{error}</p>
+            <button
+              onClick={fetchNotifications}
+              className="mt-4 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm font-medium"
+            >
+              Retry
+            </button>
           </div>
-          <h3
-            className={cn(
-              "text-xl font-bold text-slate-800",
-              bebasNeue.className,
-            )}
-          >
-            Failed to load notifications
-          </h3>
-          <p className="text-sm text-slate-500 mt-1 max-w-sm">{error}</p>
-          <button
-            onClick={fetchNotifications}
-            className="mt-4 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm font-medium"
-          >
-            Retry
-          </button>
         </div>
       </div>
     );
@@ -268,38 +297,29 @@ export default function NotificationsPanel() {
 
   if (notifications.length === 0) {
     return (
-      <div className={cn("space-y-6 pb-20 px-4 sm:px-0", poppins.className)}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1
+      <div
+        className={cn(
+          "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8",
+          poppins.className,
+        )}
+      >
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/80 shadow-sm">
+            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3
               className={cn(
-                "text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800",
+                "text-2xl font-bold text-slate-800",
                 bebasNeue.className,
               )}
             >
-              Notifications
-            </h1>
-            <p className="text-sm text-slate-500">
-              Stay updated with your center's activity
+              All caught up!
+            </h3>
+            <p className={cn("text-sm text-slate-500 mt-1", poppins.className)}>
+              You have no notifications at the moment. Check back later.
             </p>
           </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200/80 shadow-sm">
-          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Bell className="w-10 h-10 text-slate-300" />
-          </div>
-          <h3
-            className={cn(
-              "text-xl font-bold text-slate-800",
-              bebasNeue.className,
-            )}
-          >
-            All caught up!
-          </h3>
-          <p className={cn("text-sm text-slate-500 mt-1", poppins.className)}>
-            You have no notifications at the moment. Check back later.
-          </p>
         </div>
       </div>
     );
@@ -308,116 +328,165 @@ export default function NotificationsPanel() {
   // ─── Main Render ────────────────────────────────────────────────────
 
   return (
-    <div className={cn("space-y-6 pb-20 px-4 sm:px-0", poppins.className)}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1
-            className={cn(
-              "text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800",
-              bebasNeue.className,
-            )}
-          >
-            Notifications
-          </h1>
-          <p className="text-sm text-slate-500">
-            {unreadCount > 0
-              ? `You have ${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
-              : "All caught up!"}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-medium transition-colors"
-            >
-              <CheckCheck className="w-4 h-4" />
-              Mark all read
-            </button>
-          )}
-          {notifications.length > 0 && (
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl text-xs font-medium transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Clear all
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Notification List */}
-      <div className="space-y-3">
-        {notifications.map((notification, index) => {
-          const Icon = getNotificationIcon(notification.type);
-          const iconColor = getIconColor(notification.type);
-          const isRead = notification.read;
-
-          return (
-            <motion.div
-              key={notification.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.04 }}
-              className={cn(
-                "bg-white rounded-2xl p-4 border shadow-sm transition-all",
-                isRead
-                  ? "border-slate-200/80"
-                  : "border-emerald-200/80 bg-emerald-50/30 hover:bg-emerald-50/50",
-                "hover:shadow-md",
-              )}
-            >
-              <div className="flex items-start gap-4">
-                {/* Icon */}
-                <div
-                  className={cn(
-                    "p-2.5 rounded-xl flex-shrink-0",
-                    iconColor,
-                    "ring-1 ring-slate-200/50",
-                  )}
+    <div
+      className={cn(
+        "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8",
+        poppins.className,
+      )}
+    >
+      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-6">
+        {/* ─── Header ────────────────────────────────────────────────── */}
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200/60">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="h-8 w-1 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
+                <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.25em]">
+                  Notifications Center
+                </span>
+              </div>
+              <h1
+                className={cn(
+                  "text-3xl md:text-4xl text-slate-900 tracking-tight font-black",
+                  bebasNeue.className,
+                )}
+              >
+                Notifications
+              </h1>
+              <p className="text-sm text-slate-500 mt-1">
+                {unreadCount > 0
+                  ? `You have ${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
+                  : "All caught up!"}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-medium transition-colors"
                 >
-                  <Icon className="w-4 h-4" />
-                </div>
+                  <CheckCheck className="w-4 h-4" />
+                  Mark all read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl text-xs font-medium transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear all
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4
-                      className={cn(
-                        "font-semibold text-slate-800",
-                        isRead ? "text-sm" : "text-sm font-bold",
-                        poppins.className,
-                      )}
-                    >
-                      {notification.title}
-                    </h4>
-                    {!isRead && (
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0" />
-                    )}
-                  </div>
-                  <p
+        {/* ─── Split Panel ──────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: List (4 cols on large) */}
+          <div className="lg:col-span-4 space-y-3">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-3 max-h-[600px] overflow-y-auto">
+              {notifications.map((notification) => {
+                const Icon = getNotificationIcon(notification.type);
+                const iconColor = getIconColor(notification.type);
+                const isSelected = selectedId === notification.id;
+                const isRead = notification.read;
+
+                return (
+                  <button
+                    key={notification.id}
+                    onClick={() => {
+                      setSelectedId(notification.id);
+                      if (!isRead) markAsRead(notification.id);
+                    }}
                     className={cn(
-                      "text-sm text-slate-600 mt-0.5",
-                      poppins.className,
+                      "w-full text-left p-3 rounded-xl transition-all mb-1.5 last:mb-0",
+                      isSelected
+                        ? "bg-emerald-50 border border-emerald-200 shadow-sm"
+                        : "hover:bg-slate-50 border border-transparent",
+                      !isRead && "bg-blue-50/30",
                     )}
                   >
-                    {notification.message}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          "p-2 rounded-lg flex-shrink-0",
+                          iconColor,
+                          "ring-1 ring-slate-200/50",
+                        )}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4
+                            className={cn(
+                              "text-xs font-semibold text-slate-800 truncate",
+                              !isRead && "font-bold",
+                            )}
+                          >
+                            {notification.title}
+                          </h4>
+                          {!isRead && (
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-600 truncate mt-0.5">
+                          {notification.message}
+                        </p>
+                        <span className="text-[10px] text-slate-400 mt-1 block">
+                          {formatTime(notification.createdAt)}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <ChevronRight className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-1" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right: Detail (8 cols on large) */}
+          <div className="lg:col-span-8">
+            {selectedNotification ? (
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 h-full min-h-[400px]">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div
                       className={cn(
-                        "text-xs text-slate-400",
-                        poppins.className,
+                        "p-3 rounded-xl",
+                        getIconColor(selectedNotification.type),
                       )}
                     >
-                      {formatTime(notification.createdAt)}
-                    </span>
-                    {!isRead && (
+                      {React.createElement(
+                        getNotificationIcon(selectedNotification.type),
+                        {
+                          className: "w-5 h-5",
+                        },
+                      )}
+                    </div>
+                    <div>
+                      <h3
+                        className={cn(
+                          "text-lg font-bold text-slate-800",
+                          bebasNeue.className,
+                        )}
+                      >
+                        {selectedNotification.title}
+                      </h3>
+                      <span className="text-xs text-slate-400">
+                        {formatFullDate(selectedNotification.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!selectedNotification.read && (
                       <button
-                        onClick={() => markAsRead(notification.id)}
-                        className="text-[10px] font-medium text-emerald-600 hover:underline"
+                        onClick={() => markAsRead(selectedNotification.id)}
+                        className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium hover:bg-emerald-200 transition-colors"
                       >
                         Mark as read
                       </button>
@@ -425,19 +494,75 @@ export default function NotificationsPanel() {
                   </div>
                 </div>
 
-                {/* Actions */}
-                {notification.link && (
-                  <button
-                    onClick={() => window.open(notification.link, "_blank")}
-                    className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                )}
+                <div className="space-y-4">
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      {selectedNotification.message}
+                    </p>
+                  </div>
+
+                  {/* Sender Info */}
+                  {(selectedNotification.senderName ||
+                    selectedNotification.patientName) && (
+                    <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-200">
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+                        Sender Information
+                      </h4>
+                      <div className="space-y-2">
+                        {selectedNotification.senderName && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <User className="w-4 h-4 text-slate-400" />
+                            <span className="text-slate-700">
+                              {selectedNotification.senderName}
+                            </span>
+                            {selectedNotification.senderRole && (
+                              <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                {selectedNotification.senderRole}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {selectedNotification.patientName && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Stethoscope className="w-4 h-4 text-slate-400" />
+                            <span className="text-slate-700">
+                              Patient: {selectedNotification.patientName}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Building className="w-4 h-4 text-slate-400" />
+                          <span className="text-slate-700">
+                            {center?.centerName || "Medical Center"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Related ID (if any) */}
+                  {selectedNotification.relatedId && (
+                    <div className="text-xs text-slate-400">
+                      Reference ID:{" "}
+                      <span className="font-mono">
+                        {selectedNotification.relatedId.slice(0, 8)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </motion.div>
-          );
-        })}
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 h-full min-h-[400px] flex items-center justify-center text-center">
+                <div>
+                  <Bell className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-sm text-slate-500">
+                    Select a notification to view details
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Clear All Confirmation Modal */}

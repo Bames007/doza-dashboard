@@ -21,15 +21,16 @@ import {
   ChevronUp,
   ChevronDown,
   Eye,
+  DollarSign,
 } from "lucide-react";
 import { useDashboard } from "../../DashboardContext";
 import { useHospitalPharmacyMedicationDispensing } from "../../dashboards/hooks/useHospitalPharmacyMedicationDispensing";
 import { poppins, bebasNeue } from "@/app/utils/constants";
 import { cn } from "@/app/utils/utils";
 import { useAuditLog } from "../../dashboards/hooks/useAuditLog";
+import { addBillItem } from "../hospital_components/billing";
 
 // ─── Role Check ──────────────────────────────────────────────────────
-
 const normalizeRole = (role: string | undefined): string => {
   if (!role) return "support";
   const r = role.toLowerCase().trim();
@@ -40,7 +41,6 @@ const normalizeRole = (role: string | undefined): string => {
 };
 
 // ─── Main Component ──────────────────────────────────────────────────
-
 export default function HospitalMedicationDispensingPanel() {
   const { center, user } = useDashboard();
   const { logAction } = useAuditLog();
@@ -49,7 +49,6 @@ export default function HospitalMedicationDispensingPanel() {
   const canDispense =
     normalizedRole === "pharmacist" || normalizedRole === "admin";
 
-  // ─── Hooks ────────────────────────────────────────────────────────
   const {
     prescriptions,
     loading,
@@ -127,39 +126,99 @@ export default function HospitalMedicationDispensingPanel() {
       alert("Please select a dispense status.");
       return;
     }
-    if (dispenseForm.status === "partial" && !dispenseForm.quantity) {
-      alert("Please enter the quantity dispensed.");
+
+    // Find the prescription to get remaining quantity
+    const rx = prescriptions.find(
+      (p) => p.patientId === patientId && p.index === index,
+    );
+    if (!rx) {
+      alert("Prescription not found.");
       return;
     }
+    const remaining = Math.max(
+      0,
+      (rx.totalQuantity || 0) - (rx.dispensedTotal || 0),
+    );
+
+    let dispenseQty = 0;
+    if (dispenseForm.status === "partial") {
+      if (!dispenseForm.quantity || parseFloat(dispenseForm.quantity) <= 0) {
+        alert("Please enter a valid quantity.");
+        return;
+      }
+      dispenseQty = parseFloat(dispenseForm.quantity);
+      if (dispenseQty > remaining) {
+        alert(`Cannot dispense more than remaining (${remaining}).`);
+        return;
+      }
+    } else if (dispenseForm.status === "full") {
+      if (remaining === 0) {
+        alert("No remaining quantity to dispense.");
+        return;
+      }
+      dispenseQty = remaining;
+    } else {
+      // out_of_stock or cancelled – no quantity
+      dispenseQty = 0;
+    }
+
     setIsSubmitting(true);
     try {
+      const newDispensedTotal = (rx.dispensedTotal || 0) + dispenseQty;
+      const newStatus =
+        dispenseForm.status === "full"
+          ? "full"
+          : dispenseForm.status === "partial"
+            ? "partial"
+            : dispenseForm.status;
       const updateData: any = {
         dispensed: true,
-        dispensedStatus: dispenseForm.status,
+        dispensedStatus: newStatus,
         pharmacistNotes: dispenseForm.notes || undefined,
         dispensedAt: new Date().toISOString(),
         dispensedById: user?.id,
+        dispensedTotal: newDispensedTotal,
+        dispensedQuantity: dispenseQty,
       };
-      if (dispenseForm.status === "partial") {
-        updateData.dispensedQuantity = parseFloat(dispenseForm.quantity);
-      }
+
       await updatePrescription(patientId, index, updateData);
+
+      // ─── Add bill item for dispensed quantity ──────────────────
+      if (dispenseQty > 0 && center?.id && user?.id) {
+        const unitPrice = rx.price || 0;
+        const totalAmount = unitPrice * dispenseQty;
+        await addBillItem(
+          center.id,
+          user.id,
+          user.fullName || "Pharmacist",
+          user.role || "pharmacist",
+          patientId,
+          {
+            type: "prescription",
+            description: `${rx.medication} x${dispenseQty}`,
+            amount: totalAmount,
+            quantity: dispenseQty,
+          },
+        );
+      }
+
       logAction(
         "update",
         "prescription",
         patientId,
-        `Dispensed medication – ${dispenseForm.status}`,
+        `Dispensed ${dispenseQty} units of ${rx.medication} – ${dispenseForm.status}`,
       );
       closeDispense();
       await refetch();
     } catch (err) {
       alert("Failed to dispense.");
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getStatusConfig = (status: string | undefined) => {
+  const getStatusConfig = (status: string | undefined, remaining?: number) => {
     if (!status || status === "none") {
       return {
         label: "Pending",
@@ -411,6 +470,10 @@ export default function HospitalMedicationDispensingPanel() {
                     </div>
                   </th>
                   <th className="px-4 py-3 text-left font-medium">Dosage</th>
+                  <th className="px-4 py-3 text-left font-medium">
+                    Qty (Total / Remaining)
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium">Price (₦)</th>
                   <th
                     className="px-4 py-3 text-left font-medium cursor-pointer hover:text-slate-900"
                     onClick={() => toggleSort("prescribedAt")}
@@ -418,20 +481,6 @@ export default function HospitalMedicationDispensingPanel() {
                     <div className="flex items-center gap-1">
                       Prescribed
                       {sortBy === "prescribedAt" &&
-                        (sortOrder === "asc" ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        ))}
-                    </div>
-                  </th>
-                  <th
-                    className="px-4 py-3 text-left font-medium cursor-pointer hover:text-slate-900"
-                    onClick={() => toggleSort("dispensedAt")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Dispensed
-                      {sortBy === "dispensedAt" &&
                         (sortOrder === "asc" ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (
@@ -458,11 +507,15 @@ export default function HospitalMedicationDispensingPanel() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((prescription) => {
+                  const totalQty = prescription.totalQuantity || 0;
+                  const dispensed = prescription.dispensedTotal || 0;
+                  const remaining = Math.max(0, totalQty - dispensed);
                   const config = getStatusConfig(prescription.dispensedStatus);
                   const Icon = config.icon;
                   const isPending =
                     !prescription.dispensed ||
-                    prescription.dispensedStatus === "none";
+                    prescription.dispensedStatus === "none" ||
+                    remaining > 0;
                   return (
                     <motion.tr
                       key={prescription.id}
@@ -479,11 +532,14 @@ export default function HospitalMedicationDispensingPanel() {
                       <td className="px-4 py-3 text-slate-700">
                         {prescription.dosage}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {formatDate(prescription.prescribedAt)}
+                      <td className="px-4 py-3 text-slate-700">
+                        {totalQty} / {remaining}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        ₦{prescription.price?.toFixed(2) || "0.00"}
                       </td>
                       <td className="px-4 py-3 text-slate-600">
-                        {formatDate(prescription.dispensedAt)}
+                        {formatDate(prescription.prescribedAt)}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -507,7 +563,7 @@ export default function HospitalMedicationDispensingPanel() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          {canDispense && isPending && (
+                          {canDispense && isPending && remaining > 0 && (
                             <button
                               onClick={() =>
                                 openDispense(
@@ -619,6 +675,9 @@ function DetailModal({
   const config = getStatusConfig(prescription.dispensedStatus);
   const isPending =
     !prescription.dispensed || prescription.dispensedStatus === "none";
+  const totalQty = prescription.totalQuantity || 0;
+  const dispensed = prescription.dispensedTotal || 0;
+  const remaining = Math.max(0, totalQty - dispensed);
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
@@ -681,6 +740,26 @@ function DetailModal({
               <p className="font-semibold text-slate-900">
                 {prescription.prescribedBy || "Unknown"}
               </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Price per unit
+              </label>
+              <p className="font-semibold text-slate-900">
+                ₦{prescription.price?.toFixed(2) || "0.00"}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Total Quantity
+              </label>
+              <p className="font-semibold text-slate-900">{totalQty}</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Remaining
+              </label>
+              <p className="font-semibold text-slate-900">{remaining}</p>
             </div>
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -753,12 +832,20 @@ function DetailModal({
                 </div>
                 {prescription.dispensedQuantity && (
                   <div>
-                    <span className="text-xs text-emerald-600">Quantity</span>
+                    <span className="text-xs text-emerald-600">Last Qty</span>
                     <p className="font-medium text-emerald-900">
                       {prescription.dispensedQuantity}
                     </p>
                   </div>
                 )}
+                <div>
+                  <span className="text-xs text-emerald-600">
+                    Total Dispensed
+                  </span>
+                  <p className="font-medium text-emerald-900">
+                    {prescription.dispensedTotal || 0}
+                  </p>
+                </div>
                 <div className="col-span-2">
                   <span className="text-xs text-emerald-600">Notes</span>
                   <p className="text-sm text-emerald-800 italic">
@@ -824,7 +911,7 @@ function DispenseActionModal({
               }
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             >
-              <option value="full">Full Dispense</option>
+              <option value="full">Full Dispense (Remaining)</option>
               <option value="partial">Partial Dispense</option>
               <option value="out_of_stock">Out of Stock</option>
               <option value="cancelled">Cancelled</option>

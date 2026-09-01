@@ -20,6 +20,7 @@ import { PrescriptionCard } from "../components/prescriptions/PrescriptionCard";
 import { NewPrescriptionModal } from "../components/prescriptions/NewPrescriptionModal";
 import { PrescriptionDetailsModal } from "../components/prescriptions/PrescriptionDetailsModal";
 import { PatientHistoryModal } from "../components/prescriptions/PatientHistoryModal";
+import { addBillItem } from "./hospital_components/billing";
 
 interface PrescriptionsPanelProps {
   center: Center;
@@ -91,8 +92,8 @@ export const PrescriptionsPanel = ({
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(
-    null
-  ); // Changed from selectedPatientPhone
+    null,
+  );
 
   // Filters
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -135,15 +136,13 @@ export const PrescriptionsPanel = ({
     const active = data.filter((p) => p.status === "ACTIVE").length;
     const dozaUsers = data.filter((p) => p.isDozaUser).length;
     const slipsPrinted = data.filter((p) => p.slipPrinted).length;
-
-    // Calculate average time between prescriptions (simplified)
     const avgTime = total > 0 ? "5m" : "0m";
 
     setStatistics({
       totalPrescriptions: total,
       activePrescriptions: active,
       dozaUsersCount: dozaUsers,
-      remindersSent: Math.floor(total * 0.7), // Example calculation
+      remindersSent: Math.floor(total * 0.7),
       slipsPrinted,
       avgResponseTime: avgTime,
     });
@@ -153,19 +152,17 @@ export const PrescriptionsPanel = ({
   useEffect(() => {
     let filtered = [...prescriptions];
 
-    // Filter by status
     if (selectedStatus !== "all") {
       filtered = filtered.filter((p) => p.status === selectedStatus);
     }
 
-    // Filter by date range
     const now = new Date();
     switch (selectedDateRange) {
       case "today":
         const today = new Date(
           now.getFullYear(),
           now.getMonth(),
-          now.getDate()
+          now.getDate(),
         );
         filtered = filtered.filter((p) => new Date(p.createdAt) >= today);
         break;
@@ -177,23 +174,22 @@ export const PrescriptionsPanel = ({
         const monthAgo = new Date(
           now.getFullYear(),
           now.getMonth() - 1,
-          now.getDate()
+          now.getDate(),
         );
         filtered = filtered.filter((p) => new Date(p.createdAt) >= monthAgo);
         break;
     }
 
-    // Filter by prescriber role
     if (selectedPrescriber !== "all") {
       filtered = filtered.filter(
-        (p) => p.prescribedByRole === selectedPrescriber
+        (p) => p.prescribedByRole === selectedPrescriber,
       );
     }
 
     setFilteredPrescriptions(filtered);
   }, [prescriptions, selectedStatus, selectedDateRange, selectedPrescriber]);
 
-  // Handle patient selection - UPDATED to accept full patient object
+  // Handle patient selection
   const handleSelectPatient = (patient: PatientData) => {
     console.log("Patient selected in PrescriptionsPanel:", patient);
     if (patient) {
@@ -221,12 +217,11 @@ export const PrescriptionsPanel = ({
           body: JSON.stringify({
             action: "PRINT_SLIP",
           }),
-        }
+        },
       );
 
       if (response.ok) {
         await loadPrescriptions();
-        // Trigger print dialog
         window.print();
       }
     } catch (error) {
@@ -247,7 +242,7 @@ export const PrescriptionsPanel = ({
           body: JSON.stringify({
             action: "SEND_REMINDER",
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -258,6 +253,7 @@ export const PrescriptionsPanel = ({
     }
   };
 
+  // ✅ CREATE PRESCRIPTION + BILL ITEM
   const handleCreatePrescription = async (data: any) => {
     try {
       const prescriptionData = {
@@ -281,9 +277,30 @@ export const PrescriptionsPanel = ({
       const result = await response.json();
 
       if (result.success) {
+        // ✅ Add bill item for the prescription (if it has a price)
+        if (data.price && data.price > 0) {
+          // We need the patient ID; the prescriptionData should contain patientId
+          const patientId = data.patientId || data.patient?.id;
+          if (patientId) {
+            await addBillItem(
+              center.id,
+              user.id,
+              user.fullName || "Unknown",
+              user.role || "staff",
+              patientId,
+              {
+                type: "prescription",
+                description: `Prescription: ${data.medication} ${data.dosage}`,
+                amount: data.price,
+                quantity: data.quantity || 1,
+              },
+            );
+          }
+        }
+
         await loadPrescriptions();
         setShowNewPrescription(false);
-        alert(result.message);
+        alert(result.message || "Prescription created and billed.");
       }
     } catch (error: any) {
       console.error("Error creating prescription:", error);
@@ -298,7 +315,7 @@ export const PrescriptionsPanel = ({
           onNewPrescription={() => setShowNewPrescription(true)}
           onSearch={() => {
             const searchInput = document.querySelector(
-              'input[placeholder*="Search by patient"]'
+              'input[placeholder*="Search by patient"]',
             );
             if (searchInput) (searchInput as HTMLElement).focus();
             setIsSearchFocused(true);
@@ -550,7 +567,7 @@ export const PrescriptionsPanel = ({
                         Active:{" "}
                         {
                           filteredPrescriptions.filter(
-                            (p) => p.status === "ACTIVE"
+                            (p) => p.status === "ACTIVE",
                           ).length
                         }
                       </span>
@@ -561,7 +578,7 @@ export const PrescriptionsPanel = ({
                         Completed:{" "}
                         {
                           filteredPrescriptions.filter(
-                            (p) => p.status === "COMPLETED"
+                            (p) => p.status === "COMPLETED",
                           ).length
                         }
                       </span>
@@ -572,7 +589,7 @@ export const PrescriptionsPanel = ({
                         Cancelled:{" "}
                         {
                           filteredPrescriptions.filter(
-                            (p) => p.status === "CANCELLED"
+                            (p) => p.status === "CANCELLED",
                           ).length
                         }
                       </span>
@@ -583,7 +600,7 @@ export const PrescriptionsPanel = ({
                         Expired:{" "}
                         {
                           filteredPrescriptions.filter(
-                            (p) => p.status === "EXPIRED"
+                            (p) => p.status === "EXPIRED",
                           ).length
                         }
                       </span>

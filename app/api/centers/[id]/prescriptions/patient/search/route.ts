@@ -61,7 +61,7 @@ export async function GET(
 
     let results: any[] = [];
 
-    // Search in doza_users database
+    // Search in doza/users database
     const usersRef = ref(db, "users");
     const snapshot = await get(usersRef);
     if (snapshot.exists()) {

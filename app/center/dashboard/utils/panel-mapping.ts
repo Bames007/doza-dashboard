@@ -4,6 +4,8 @@
 export const hrefToPanelMap: { [key: string]: string } = {
   "/dashboard": "dashboard",
   "/dashboard/facility": "facility-services",
+
+  "/dashboard/doza-requests": "doza-requests",
   "/dashboard/analytics": "analytics",
   "/dashboard/patients": "patients",
   "/dashboard/appointments": "appointments",
@@ -26,6 +28,7 @@ export const hrefToPanelMap: { [key: string]: string } = {
 export const panelToPageNameMap: { [key: string]: string } = {
   dashboard: "Dashboard",
   "facility-services": "Facility & Services",
+  "doza-requests": "Doza Requests",
   analytics: "Analytics & Reports",
   patients: "Patient Management",
   appointments: "Appointments",

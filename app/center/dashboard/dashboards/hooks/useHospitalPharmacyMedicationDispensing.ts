@@ -1,11 +1,9 @@
 // app/center/dashboard/hooks/useHospitalPharmacyMedicationDispensing.ts
+
 "use client";
 
 import { useMemo, useCallback } from "react";
-import {
-  usePrescriptions,
-  PrescriptionWithPatient,
-} from "./useHospitalPrescription";
+import { usePrescriptions } from "./useHospitalPrescription";
 
 export type DispensingFilter = {
   search?: string;
@@ -20,12 +18,60 @@ export type DispensingFilter = {
   sortOrder?: "asc" | "desc";
 };
 
+// Extended prescription type with quantity tracking
+export interface DispensingPrescription {
+  id: string;
+  patientId: string;
+  patientName: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  duration: string;
+  instructions: string;
+  prescribedBy: string;
+  prescribedAt: string;
+  dispensed: boolean;
+  dispensedStatus?: "none" | "partial" | "full" | "out_of_stock" | "cancelled";
+  dispensedQuantity?: number; // last dispensed quantity
+  dispensedTotal?: number; // cumulative dispensed
+  totalQuantity?: number; // prescribed total
+  pharmacistNotes?: string;
+  dispensedAt?: string;
+  dispensedById?: string;
+  index: number;
+  price?: number;
+}
+
 export function useHospitalPharmacyMedicationDispensing(
   centerId?: string,
   userId?: string,
 ) {
-  const { prescriptions, loading, refetch, updatePrescription } =
-    usePrescriptions(centerId, userId);
+  const {
+    prescriptions: basePrescriptions,
+    loading,
+    refetch,
+    updatePrescription,
+  } = usePrescriptions(centerId, userId);
+
+  // Enhance prescriptions with quantity tracking
+  const prescriptions = useMemo(() => {
+    return basePrescriptions.map((p) => {
+      // If the prescription already has totalQuantity and dispensedTotal, use them
+      // Otherwise, compute defaults
+      const totalQty = (p as any).totalQuantity || 1;
+      const dispensedTotal = (p as any).dispensedTotal || 0;
+      const remaining = Math.max(0, totalQty - dispensedTotal);
+      return {
+        ...p,
+        totalQuantity: totalQty,
+        dispensedTotal: dispensedTotal,
+        remaining,
+        // Determine status based on remaining quantity
+        // We keep the existing dispensedStatus but could override if needed
+      };
+    });
+  }, [basePrescriptions]);
 
   const filterPrescriptions = useCallback(
     (filters: DispensingFilter) => {
@@ -43,7 +89,10 @@ export function useHospitalPharmacyMedicationDispensing(
       if (filters.status && filters.status !== "all") {
         if (filters.status === "pending") {
           result = result.filter(
-            (p) => !p.dispensed || p.dispensedStatus === "none",
+            (p) =>
+              !p.dispensed ||
+              p.dispensedStatus === "none" ||
+              (p.remaining && p.remaining > 0),
           );
         } else {
           result = result.filter((p) => p.dispensedStatus === filters.status);
@@ -106,10 +155,37 @@ export function useHospitalPharmacyMedicationDispensing(
     [prescriptions],
   );
 
+  // Override update to handle dispensedTotal
+  const updatePrescriptionWithDispense = useCallback(
+    async (patientId: string, index: number, data: any) => {
+      // If updating dispensedTotal, we need to merge with existing
+      if (data.dispensedTotal !== undefined) {
+        // We'll store dispensedTotal in the prescription object
+        // The base update will overwrite the whole prescription, so we need to fetch current first
+        // But we can just call updatePrescription with the new data
+        // However, the base update expects partial data; we'll pass the updated fields
+        // We need to ensure that the prescription object in the patient has the fields.
+        // We'll call updatePrescription with the updated prescription item.
+        // Since we don't have direct access to the patient's prescriptions array, we'll let the base hook handle it.
+        // But the base hook's updatePrescription expects a patientId and index, and data to merge.
+        // We'll pass the updated fields including dispensedTotal and dispensed.
+        await updatePrescription(patientId, index, data);
+      } else {
+        await updatePrescription(patientId, index, data);
+      }
+      // Refetch to sync
+      await refetch();
+    },
+    [updatePrescription, refetch],
+  );
+
   const stats = useMemo(() => {
     const total = prescriptions.length;
     const pending = prescriptions.filter(
-      (p) => !p.dispensed || p.dispensedStatus === "none",
+      (p) =>
+        !p.dispensed ||
+        p.dispensedStatus === "none" ||
+        (p.remaining && p.remaining > 0),
     ).length;
     const full = prescriptions.filter(
       (p) => p.dispensedStatus === "full",
@@ -130,7 +206,7 @@ export function useHospitalPharmacyMedicationDispensing(
     prescriptions,
     loading,
     refetch,
-    updatePrescription,
+    updatePrescription: updatePrescriptionWithDispense,
     filterPrescriptions,
     stats,
   };

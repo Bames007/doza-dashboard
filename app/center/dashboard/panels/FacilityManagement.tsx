@@ -20,9 +20,6 @@ import {
   CheckCircle2,
   Search,
   FlaskConical,
-  TestTube,
-  Droplets,
-  Microscope,
 } from "lucide-react";
 import { bebasNeue, poppins } from "@/app/utils/constants";
 import { cn } from "@/app/utils/utils";
@@ -35,7 +32,7 @@ import {
   User,
 } from "@/app/center/type";
 
-// ─── Types ────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────── ─
 
 interface Test {
   id: string;

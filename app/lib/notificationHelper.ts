@@ -1,3 +1,5 @@
+// app/lib/notificationHelper.ts
+
 import { ref, push, update } from "firebase/database";
 import { db } from "@/app/utils/firebaseConfig";
 import logger from "@/app/utils/logger";
@@ -7,7 +9,12 @@ interface NotificationPayload {
   userId: string;
   title: string;
   message: string;
-  type: "requisition" | "approval" | "fulfillment" | "stock-alert";
+  type:
+    | "requisition"
+    | "approval"
+    | "fulfillment"
+    | "stock-alert"
+    | "appointment"; // ✅ added "appointment"
   relatedId: string;
   link?: string;
 }

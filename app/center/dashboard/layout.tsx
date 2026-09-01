@@ -1,3 +1,5 @@
+// app/center/dashboard/DashboardLayout.tsx
+
 "use client";
 
 import { DashboardProvider, useDashboard } from "./DashboardContext";
@@ -6,23 +8,12 @@ import DashboardHeader from "./DashboardHeader";
 import MessagesPanel from "../messenger/MessagePanel";
 import DraggableChatPopup from "../messenger/DraggableChatPopup";
 import PanelRenderer from "./PanelRenderer";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Activity, X, RefreshCw, Loader2, LogOut } from "lucide-react";
+import BubbleTransition from "@/app/components/BubbleTransitions";
+import { AnimatePresence } from "framer-motion";
 
-// --- Loading Component ---
-const LoadingScreen = ({ message }: { message: string }) => (
-  <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-    <div className="text-center max-w-sm w-full bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
-      <Loader2 className="w-10 h-10 text-green-600 animate-spin mx-auto mb-4" />
-      <h2 className="text-lg font-bold text-gray-800">{message}</h2>
-      <div className="w-full bg-gray-100 rounded-full h-1.5 mt-4 overflow-hidden">
-        <div className="bg-green-600 h-full rounded-full animate-pulse w-full"></div>
-      </div>
-    </div>
-  </div>
-);
-
-// --- Session Status Indicator Component ---
+// ─── SessionStatusIndicator (unchanged) ──────────────────────────
 function SessionStatusIndicator() {
   const [isMinimized, setIsMinimized] = useState(true);
   const [session, setSession] = useState({ minutes: 0, isActive: true });
@@ -36,14 +27,13 @@ function SessionStatusIndicator() {
       const diff = Date.now() - parseInt(lastActivity);
       const minutes = Math.floor(diff / 60000);
 
-      // Assume session expires at 30 minutes
       setSession({
         minutes: minutes,
         isActive: minutes < 30,
       });
     };
 
-    const interval = setInterval(checkSession, 30000); // Check every 30 seconds
+    const interval = setInterval(checkSession, 30000);
     checkSession();
     return () => clearInterval(interval);
   }, []);
@@ -104,61 +94,120 @@ function SessionStatusIndicator() {
     </div>
   );
 }
-
-// --- Main Layout Content ---
+// ─── Dashboard Layout Content ──────────────────────────────────────
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isLoading, isSessionValid } = useDashboard();
+  const { isLoading, isSessionValid, user } = useDashboard();
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [selectedChat, setSelectedChat] = useState<any>(null);
 
-  if (isLoading) return <LoadingScreen message="Securing your workspace..." />;
-  if (!isSessionValid)
-    return <LoadingScreen message="Session expired. Redirecting..." />;
+  // Bubble transition state
+  const [showBubble, setShowBubble] = useState(false);
+  const [bubblePhase, setBubblePhase] = useState<"closing" | "opening">(
+    "closing",
+  );
+
+  useEffect(() => {
+    // Check if user just arrived from login
+    const fromLogin = sessionStorage.getItem("fromLogin");
+    if (fromLogin) {
+      // Skip the whole bubble intro
+      sessionStorage.removeItem("fromLogin");
+      setShowBubble(false);
+      return;
+    }
+    // Otherwise, start with closing phase (panels slide in)
+    setShowBubble(true);
+    setBubblePhase("closing");
+  }, []);
+
+  const handleAnimationComplete = () => {
+    if (bubblePhase === "closing") {
+      // After the two panels have come together, start the opening phase
+      setBubblePhase("opening");
+    } else if (bubblePhase === "opening") {
+      // After the panels have gone out, hide the bubble and reveal dashboard
+      setShowBubble(false);
+    }
+  };
+
+  // When session becomes valid and loading finishes, we already started the
+  // closing phase on mount, so nothing else to do here.
+
+  if (!isSessionValid && !isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm w-full bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
+          <Loader2 className="w-10 h-10 text-red-600 animate-spin mx-auto mb-4" />
+          <h2 className="text-lg font-bold text-gray-800">
+            Session expired. Redirecting...
+          </h2>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 md:flex-row overflow-hidden">
-      {/* Sidebar - Desktop */}
-      <div className="hidden md:block">
-        <DashboardSidebar />
+    <>
+      {/* Bubble Transition Overlay */}
+      <AnimatePresence>
+        {showBubble && (
+          <BubbleTransition
+            role={user?.role || "user"}
+            phase={bubblePhase}
+            onAnimationComplete={handleAnimationComplete}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main dashboard – hidden while bubble is visible */}
+      <div
+        className={`flex flex-col h-screen bg-slate-50 md:flex-row overflow-hidden transition-opacity duration-500 ${
+          showBubble ? "opacity-0" : "opacity-100"
+        }`}
+      >
+        {/* Sidebar - Desktop */}
+        <div className="hidden md:block">
+          <DashboardSidebar />
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 h-full">
+          <DashboardHeader
+            onMessagesToggle={() => setIsMessagesOpen(!isMessagesOpen)}
+          />
+
+          <main className="flex-1 overflow-y-auto p-2 md:p-6 scroll-smooth">
+            <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+              <PanelRenderer />
+              <div className="md:px-2">{children}</div>
+            </div>
+          </main>
+        </div>
+
+        {/* Sidebar - Mobile Navigation */}
+        <div className="md:hidden border-t bg-white p-2 z-40">
+          <DashboardSidebar />
+        </div>
+
+        {/* Overlays/Panels */}
+        <MessagesPanel
+          isOpen={isMessagesOpen}
+          onClose={() => setIsMessagesOpen(false)}
+          onChatSelect={(chat) => setSelectedChat(chat)}
+        />
+        <DraggableChatPopup
+          chat={selectedChat}
+          onClose={() => setSelectedChat(null)}
+        />
+
+        {/* Session Indicator */}
+        <SessionStatusIndicator />
       </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full">
-        {/* <DashboardHeader
-          onMessagesToggle={() => setIsMessagesOpen(!isMessagesOpen)}
-        /> */}
-
-        <main className="flex-1 overflow-y-auto p-2 md:p-6 scroll-smooth">
-          <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
-            <PanelRenderer />
-            <div className="md:px-2">{children}</div>
-          </div>
-        </main>
-      </div>
-
-      {/* Sidebar - Mobile Navigation */}
-      <div className="md:hidden border-t bg-white p-2 z-40">
-        <DashboardSidebar />
-      </div>
-
-      {/* Overlays/Panels */}
-      <MessagesPanel
-        isOpen={isMessagesOpen}
-        onClose={() => setIsMessagesOpen(false)}
-        onChatSelect={(chat) => setSelectedChat(chat)}
-      />
-      <DraggableChatPopup
-        chat={selectedChat}
-        onClose={() => setSelectedChat(null)}
-      />
-
-      {/* Session Indicator */}
-      <SessionStatusIndicator />
-    </div>
+    </>
   );
 }
 
-// --- Exported Layout Component ---
+// ─── Exported Layout Component ─────────────────────────────────────
 export default function DashboardLayout({
   children,
 }: {
@@ -167,7 +216,15 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  if (!mounted) return <LoadingScreen message="Initializing Doza..." />;
+  if (!mounted) {
+    return (
+      <BubbleTransition
+        role="user"
+        phase="closing"
+        onAnimationComplete={() => {}}
+      />
+    );
+  }
 
   return (
     <DashboardProvider>

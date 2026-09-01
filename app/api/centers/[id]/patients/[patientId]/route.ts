@@ -1,5 +1,8 @@
+// peer/app/api/centers/[centerId]/patients/[patientId]/route.ts
+// For patients to fetch their own clinical data from a center
+
 // app/api/centers/[id]/patients/[patientId]/route.ts
-// URL: /api/centers/[id]/patients/[patientId]
+// Center staff only – uses x-user-id headers
 // Methods: GET, PUT, DELETE
 
 import { NextRequest, NextResponse } from "next/server";
@@ -16,13 +19,12 @@ import {
   handleError,
 } from "@/app/lib/apiHelpers";
 
-// ─── Updated Schema – match the create schema ───────────────────────
-
+// ─── Validation Schema ──────────────────────────────────────────────
 const patientUpdateSchema = z
   .object({
     fullName: z.string().optional(),
     email: z
-      .union([z.string().email("Invalid email address"), z.literal("")])
+      .union([z.string().email("Invalid email"), z.literal("")])
       .optional(),
     phone: z.string().optional(),
     dateOfBirth: z.string().optional(),
@@ -55,7 +57,6 @@ const patientUpdateSchema = z
     referral: z.record(z.string(), z.any()).optional(),
     dischargeSummary: z.string().optional(),
     allergies: z.array(z.string()).optional(),
-    // Emergency fields
     acuity: z.enum(["1", "2", "3", "4", "5"]).optional(),
     bedAssigned: z.string().optional(),
     triageTime: z.string().optional(),
@@ -68,7 +69,6 @@ const patientUpdateSchema = z
   .passthrough();
 
 // ─── GET ─────────────────────────────────────────────────────────────
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; patientId: string }> },
@@ -100,6 +100,23 @@ export async function GET(
     }
 
     const data = { id: patientId, ...snapshot.val() };
+
+    // ─── Fetch bills ──────────────────────────────────────────────
+    const billsRef = ref(db, `doza_centers/${centerId}/bills/${patientId}`);
+    const billsSnap = await get(billsRef);
+    let bills: any[] = [];
+    if (billsSnap.exists()) {
+      const billsData = billsSnap.val();
+      bills = Object.entries(billsData).map(([id, bill]) => ({
+        id,
+        ...(bill as any),
+      }));
+      bills.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+    data.bills = bills;
+    data.totalBilling = bills.reduce((sum, b) => sum + (b.total || 0), 0);
+    // ──────────────────────────────────────────────────────────────
+
     cache.set(cacheKey, data, 30);
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -108,7 +125,6 @@ export async function GET(
 }
 
 // ─── PUT ─────────────────────────────────────────────────────────────
-
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; patientId: string }> },
@@ -140,6 +156,7 @@ export async function PUT(
     const updates = { ...validated, updatedAt: new Date().toISOString() };
     await update(patientRef, updates);
 
+    // Invalidate caches
     cache.set(`patient:${centerId}:${patientId}`, null, 0);
     cache.set(`patients:${centerId}`, null, 0);
 
@@ -147,6 +164,7 @@ export async function PUT(
     const updatedData = { id: patientId, ...updatedSnapshot.val() };
     const updatedFields = Object.keys(validated).join(", ");
 
+    // Audit log
     await writeAuditLog({
       centerId,
       userId,
@@ -185,7 +203,6 @@ export async function PUT(
 }
 
 // ─── DELETE ──────────────────────────────────────────────────────────
-
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; patientId: string }> },
@@ -213,9 +230,11 @@ export async function DELETE(
     const oldData = snapshot.val();
     await remove(patientRef);
 
+    // Invalidate caches
     cache.set(`patient:${centerId}:${patientId}`, null, 0);
     cache.set(`patients:${centerId}`, null, 0);
 
+    // Audit log
     await writeAuditLog({
       centerId,
       userId,

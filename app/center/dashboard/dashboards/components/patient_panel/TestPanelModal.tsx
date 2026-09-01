@@ -1,3 +1,5 @@
+// app/center/dashboard/components/patient_panel/TestPanelModal.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -16,6 +18,7 @@ interface TestPanelModalProps {
     testId: string,
     testName: string,
     sampleType: string,
+    price: number, // ✅ added price
   ) => Promise<void>;
   testCatalog: any[];
   catalogLoading: boolean;
@@ -43,6 +46,7 @@ export default function TestPanelModal({
       test.id,
       test.name,
       test.sampleType || "",
+      test.price || 0, // ✅ pass price
     );
     setLoading(false);
   };

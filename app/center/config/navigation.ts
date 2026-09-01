@@ -1,29 +1,23 @@
 // config/navigation.ts
+
 import {
   getCenterRoleNavigation,
   normalizeRoleForCenter,
   getFallbackNavigation,
+  isValidCenterType,
 } from "./center-role-navigation";
 import type { NavigationItem, CenterType } from "../type";
 import logger from "@/app/utils/logger";
 
+/**
+ * Get the filtered navigation items for a given user role and center type.
+ * Handles missing/invalid inputs with fallback and detailed logging.
+ */
 export const getFilteredNavigation = (
   userRole: string,
   centerType?: CenterType,
 ): NavigationItem[] => {
-  // Validate centerType
-  const validCenterTypes: CenterType[] = [
-    "pharmacy",
-    "hospital",
-    "clinic",
-    "medical_center",
-    "diagnostic_lab",
-    "dental_clinic",
-    "optical_center",
-    "emergency",
-    "cardiac_center",
-  ];
-
+  // Validate centerType using the shared utility
   if (!centerType) {
     logger.warn(
       { userRole },
@@ -37,7 +31,7 @@ export const getFilteredNavigation = (
     return fallback;
   }
 
-  if (!validCenterTypes.includes(centerType)) {
+  if (!isValidCenterType(centerType)) {
     logger.warn({ userRole, centerType }, "Invalid center type provided");
     const fallback = getFallbackNavigation("medical_center", "nurse");
     logger.debug(
@@ -89,4 +83,5 @@ export const getFilteredNavigation = (
   }
 };
 
+// Re‑export dashboard configuration from the dedicated module
 export { roleDashboards, centerTypeConfigs } from "./center-based-navigation";

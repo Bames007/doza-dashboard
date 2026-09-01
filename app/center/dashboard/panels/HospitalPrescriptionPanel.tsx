@@ -21,6 +21,7 @@ import {
   Ban,
   Package,
   Check,
+  DollarSign,
 } from "lucide-react";
 import { useDashboard } from "../DashboardContext";
 import { usePrescriptions } from "../dashboards/hooks/useHospitalPrescription";
@@ -208,7 +209,7 @@ export default function HospitalPrescriptionPanel() {
       case "out_of_stock":
         return {
           label: "Out of Stock",
-          bg: "bg-amber-100", // using amber instead of rose
+          bg: "bg-amber-100",
           text: "text-amber-700",
           border: "border-amber-200",
           icon: Ban,
@@ -445,6 +446,11 @@ export default function HospitalPrescriptionPanel() {
                               <Calendar className="w-3.5 h-3.5" />
                               {formatDate(prescription.prescribedAt)}
                             </span>
+                            <span className="w-1 h-1 rounded-full bg-slate-300" />
+                            <span className="flex items-center gap-1 font-medium text-slate-700">
+                              <DollarSign className="w-3.5 h-3.5" />₦
+                              {prescription.price?.toFixed(2) || "0.00"}
+                            </span>
                           </div>
                           {prescription.dispensedAt && (
                             <div className="text-xs text-slate-400 mt-1">
@@ -512,7 +518,7 @@ interface StatCardProps {
   label: string;
   value: number;
   icon: any;
-  color: "emerald" | "amber" | "slate" | "blue" | "rose"; // we keep rose for backward but we won't use it
+  color: "emerald" | "amber" | "slate" | "blue" | "rose";
 }
 
 function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
@@ -521,7 +527,7 @@ function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
     amber: "bg-amber-50 text-amber-600",
     slate: "bg-slate-100 text-slate-600",
     blue: "bg-blue-50 text-blue-600",
-    rose: "bg-rose-50 text-rose-600", // not used but kept
+    rose: "bg-rose-50 text-rose-600",
   };
   return (
     <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
@@ -705,6 +711,14 @@ function PrescriptionDetailModal({
               >
                 {statusConfig.label}
               </span>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Price
+              </label>
+              <p className="font-semibold text-slate-900">
+                ₦{prescription.price?.toFixed(2) || "0.00"}
+              </p>
             </div>
           </div>
 

@@ -94,50 +94,58 @@ function ActionModal({
   if (!isOpen) return null;
 
   const colorClasses = {
-    emerald: "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500",
-    rose: "bg-rose-600 hover:bg-rose-700 focus:ring-rose-500",
-    blue: "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500",
+    emerald:
+      "bg-gradient-to-r from-emerald-600 to-teal-600 hover:shadow-lg hover:shadow-emerald-600/25 active:scale-[0.98] focus:ring-emerald-500",
+    rose: "bg-gradient-to-r from-rose-600 to-red-600 hover:shadow-lg hover:shadow-rose-600/25 active:scale-[0.98] focus:ring-rose-500",
+    blue: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-600/25 active:scale-[0.98] focus:ring-blue-500",
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-200">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200/80 p-6"
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        className="bg-white rounded-3xl max-w-md w-full shadow-2xl shadow-slate-900/10 border border-slate-200/80 p-6 md:p-8 space-y-6"
       >
-        <h3
-          className={cn(
-            "text-xl font-bold text-slate-900",
-            bebasNeue.className,
-          )}
-        >
-          {title}
-        </h3>
-        <p className="text-sm text-slate-600 mt-1">{description}</p>
+        <div className="space-y-1.5">
+          <h3
+            className={cn(
+              "text-2xl text-slate-900 tracking-tight font-normal",
+              bebasNeue.className,
+            )}
+          >
+            {title}
+          </h3>
+          <p className="text-sm font-normal text-slate-600 leading-relaxed">
+            {description}
+          </p>
+        </div>
 
         {children}
 
         {showComment && (
-          <div className="mt-4">
-            <label className="block text-xs font-medium text-slate-700 mb-1">
-              Reason (optional)
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-slate-700 tracking-wide uppercase">
+              Reason{" "}
+              <span className="text-slate-400 font-normal lowercase">
+                (optional)
+              </span>
             </label>
             <textarea
               value={comment || ""}
               onChange={(e) => setComment && setComment(e.target.value)}
               rows={3}
-              placeholder="Provide additional details..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition"
+              placeholder="Provide additional details or context..."
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 outline-none transition-all shadow-sm"
             />
           </div>
         )}
 
-        <div className="flex justify-end gap-3 mt-6">
+        <div className="flex items-center justify-end gap-3 pt-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-2xl transition-all border border-slate-200/60 shadow-sm focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
             disabled={loading}
           >
             Cancel
@@ -146,12 +154,14 @@ function ActionModal({
             onClick={onConfirm}
             disabled={loading}
             className={cn(
-              "px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center gap-2",
+              "px-5 py-2.5 text-sm font-semibold text-white rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 focus:ring-2 focus:ring-offset-2",
               colorClasses[confirmColor],
-              loading && "opacity-70 cursor-not-allowed",
+              loading && "opacity-70 cursor-not-allowed shadow-none scale-100",
             )}
           >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loading && (
+              <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
+            )}
             {confirmLabel}
           </button>
         </div>
@@ -178,36 +188,65 @@ function RequisitionDetailModal({
   const getPriorityBadge = (priority: string) => {
     if (priority === "stat")
       return (
-        <span className="bg-rose-100 text-rose-800 text-xs px-2 py-0.5 rounded-full border border-rose-200">
-          STAT
+        <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 text-xs font-semibold px-3 py-1 rounded-full border border-rose-200/80 shadow-sm">
+          <AlertTriangle className="w-3.5 h-3.5" /> STAT
         </span>
       );
     if (priority === "urgent")
       return (
-        <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full border border-amber-200">
-          Urgent
+        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-xs font-semibold px-3 py-1 rounded-full border border-amber-200/80 shadow-sm">
+          <AlertTriangle className="w-3.5 h-3.5" /> Urgent
         </span>
       );
-    return null;
+    return (
+      <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1 rounded-full border border-slate-200">
+        Normal
+      </span>
+    );
   };
 
   const getStatusBadge = (status: string) => {
-    const map: Record<string, { label: string; color: string }> = {
-      pending: { label: "Pending", color: "bg-amber-100 text-amber-800" },
-      approved: { label: "Approved", color: "bg-emerald-100 text-emerald-800" },
-      rejected: { label: "Rejected", color: "bg-rose-100 text-rose-800" },
-      fulfilled: { label: "Fulfilled", color: "bg-blue-100 text-blue-800" },
-      draft: { label: "Draft", color: "bg-slate-100 text-slate-700" },
+    const map: Record<
+      string,
+      { label: string; color: string; border: string }
+    > = {
+      pending: {
+        label: "Pending",
+        color: "bg-amber-50 text-amber-700",
+        border: "border-amber-200/80",
+      },
+      approved: {
+        label: "Approved",
+        color: "bg-emerald-50 text-emerald-700",
+        border: "border-emerald-200/80",
+      },
+      rejected: {
+        label: "Rejected",
+        color: "bg-rose-50 text-rose-700",
+        border: "border-rose-200/80",
+      },
+      fulfilled: {
+        label: "Fulfilled",
+        color: "bg-blue-50 text-blue-700",
+        border: "border-blue-200/80",
+      },
+      draft: {
+        label: "Draft",
+        color: "bg-slate-100 text-slate-700",
+        border: "border-slate-200",
+      },
     };
     const config = map[status] || {
       label: status,
       color: "bg-slate-100 text-slate-700",
+      border: "border-slate-200",
     };
     return (
       <span
         className={cn(
-          "px-2.5 py-1 rounded-full text-xs font-medium",
+          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm border",
           config.color,
+          config.border,
         )}
       >
         {config.label}
@@ -231,87 +270,108 @@ function RequisitionDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-200">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200/80 print:shadow-none print:border-none"
+        exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-slate-900/10 border border-slate-200/80 print:shadow-none print:border-none print:max-h-none print:w-full print:rounded-none"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10 print:bg-white">
-          <div>
+        <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 md:px-8 py-5 flex justify-between items-center rounded-t-3xl z-20 print:bg-white print:border-b">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                Details view
+              </span>
+            </div>
             <h2
               className={cn(
-                "text-xl font-bold text-slate-900",
+                "text-2xl md:text-3xl text-slate-900 tracking-tight font-normal",
                 bebasNeue.className,
               )}
             >
-              Requisition Details
+              Requisition #
+              {requisition.id
+                ? requisition.id.slice(-6).toUpperCase()
+                : "Details"}
             </h2>
-            <p className="text-sm text-slate-500">
-              Full approval chain and details
-            </p>
           </div>
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex items-center gap-2.5 print:hidden">
             <button
               onClick={handlePrint}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-colors focus:ring-2 focus:ring-emerald-500"
+              className="p-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
               aria-label="Print"
+              title="Print Requisition"
             >
-              <Printer className="w-5 h-5 text-slate-600" />
+              <Printer className="w-4 h-4 text-slate-600" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-colors focus:ring-2 focus:ring-emerald-500"
+              className="p-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
               aria-label="Close"
+              title="Close Modal"
             >
-              <X className="w-5 h-5 text-slate-600" />
+              <X className="w-4 h-4 text-slate-600" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6">
-          {/* Requisition Summary */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-slate-500">Requester</p>
-              <p className="font-medium text-slate-900">
+        <div className="p-6 md:p-8 space-y-8">
+          {/* Requisition Summary Card Grid */}
+          <div className="bg-slate-50/70 p-5 md:p-6 rounded-3xl border border-slate-200/60 grid grid-cols-2 sm:grid-cols-4 gap-6">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                Requester
+              </p>
+              <p className="font-semibold text-slate-900 text-sm">
                 {requisition.requesterName}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-500">Type</p>
-              <p className="font-medium text-slate-900 capitalize">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                Type
+              </p>
+              <p className="font-semibold text-slate-900 text-sm capitalize">
                 {requisition.type.replace("-", " ")}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-500">Priority</p>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                Priority
+              </p>
               <div>{getPriorityBadge(requisition.priority)}</div>
             </div>
-            <div>
-              <p className="text-xs text-slate-500">Status</p>
-              {getStatusBadge(requisition.status)}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                Status
+              </p>
+              <div>{getStatusBadge(requisition.status)}</div>
             </div>
-            <div className="col-span-2">
-              <p className="text-xs text-slate-500">Created</p>
-              <p className="text-sm text-slate-700">
+            <div className="col-span-2 space-y-1">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                Created Date & Time
+              </p>
+              <p className="text-sm font-medium text-slate-700">
                 {formatDate(requisition.createdAt)}
               </p>
             </div>
-            {/* Assigned To */}
-            <div className="col-span-2">
-              <p className="text-xs text-slate-500">Assigned To</p>
-              <p className="font-medium text-slate-900">
+            <div className="col-span-2 space-y-1">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                Assigned To
+              </p>
+              <p className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                <User className="w-4 h-4 text-slate-400" />
                 {requisition.assignedToName || "Not assigned"}
               </p>
             </div>
             {requisition.clinicalNotes && (
-              <div className="col-span-2">
-                <p className="text-xs text-slate-500">Clinical Notes</p>
-                <p className="text-sm text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-200">
+              <div className="col-span-full space-y-1 pt-2 border-t border-slate-200/60">
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                  Clinical Notes
+                </p>
+                <p className="text-sm text-slate-700 bg-white p-3.5 rounded-2xl border border-slate-200/60 shadow-sm leading-relaxed">
                   {requisition.clinicalNotes}
                 </p>
               </div>
@@ -320,23 +380,30 @@ function RequisitionDetailModal({
 
           {/* Items */}
           {requisition.items && requisition.items.length > 0 && (
-            <div>
-              <p className="text-xs text-slate-500 mb-2">Items</p>
-              <div className="bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-emerald-600" />
+                Requested Items ({requisition.items.length})
+              </h3>
+              <div className="bg-white rounded-3xl border border-slate-200/60 overflow-hidden shadow-sm divide-y divide-slate-100">
                 {requisition.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-3 flex justify-between items-center"
+                    className="p-4 md:px-6 flex justify-between items-center hover:bg-slate-50/50 transition-colors"
                   >
-                    <div>
-                      <p className="font-medium text-slate-900">{item.name}</p>
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-slate-900 text-sm">
+                        {item.name}
+                      </p>
                       <p className="text-xs text-slate-500">
-                        {item.strength} · {item.form} · {item.unit}
+                        {item.strength}{" "}
+                        <span className="text-slate-300">•</span> {item.form}{" "}
+                        <span className="text-slate-300">•</span> {item.unit}
                       </p>
                     </div>
-                    <p className="text-sm font-medium text-slate-800">
+                    <div className="bg-slate-100 text-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold shadow-inner">
                       ×{item.quantity}
-                    </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -344,39 +411,45 @@ function RequisitionDetailModal({
           )}
 
           {/* Approval Chain */}
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-emerald-600" />
-              Approval Chain
+              Approval Chain History
             </h3>
-            <div className="relative pl-6 border-l-2 border-emerald-200 space-y-4">
+            <div className="relative pl-6 border-l-2 border-emerald-500/30 space-y-6 ml-2">
               {requisition.approvalHistory &&
               requisition.approvalHistory.length > 0 ? (
                 requisition.approvalHistory.map((entry, index) => (
-                  <div key={index} className="relative">
-                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-emerald-500 bg-white" />
-                    <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {getActionLabel(entry.action)}
-                          </p>
-                          <p className="text-sm text-slate-600">
-                            by{" "}
-                            <span className="font-medium">
+                  <div key={index} className="relative group">
+                    <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 border-emerald-600 bg-white shadow-sm ring-4 ring-emerald-50" />
+                    <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm space-y-2.5 transition-all hover:border-slate-300">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-sm">
+                              {getActionLabel(entry.action)}
+                            </span>
+                            <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-medium border border-slate-200/60">
+                              {entry.role}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            Action completed by{" "}
+                            <span className="font-semibold text-slate-800">
                               {entry.userName || entry.userId}
-                            </span>{" "}
-                            ({entry.role})
+                            </span>
                           </p>
                           {entry.comment && (
-                            <p className="text-sm text-slate-700 mt-1 flex items-start gap-1">
-                              <MessageSquare className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
-                              <span>"{entry.comment}"</span>
-                            </p>
+                            <div className="mt-2.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200/60 flex items-start gap-2 shadow-inner">
+                              <MessageSquare className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                              <span className="italic leading-relaxed">
+                                "{entry.comment}"
+                              </span>
+                            </div>
                           )}
                         </div>
-                        <div className="text-xs text-slate-400 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
+                        <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/60 whitespace-nowrap">
+                          <Calendar className="w-3 h-3 text-slate-400" />
                           {formatDate(entry.timestamp)}
                         </div>
                       </div>
@@ -384,17 +457,17 @@ function RequisitionDetailModal({
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-slate-500">
-                  No approval history yet.
-                </p>
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200/60 text-center text-sm text-slate-500">
+                  No approval history records available yet.
+                </div>
               )}
             </div>
           </div>
         </div>
 
         {/* Footer (print only) */}
-        <div className="hidden print:block text-xs text-slate-400 text-center py-4 border-t border-slate-200">
-          Printed from Doza Center Dashboard
+        <div className="hidden print:block text-xs text-slate-400 text-center py-6 border-t border-slate-200 mt-6">
+          Printed securely from Doza Center Dashboard
         </div>
       </motion.div>
     </div>
@@ -685,26 +758,26 @@ export default function HospitalRequisitionPanel() {
   return (
     <div
       className={cn(
-        "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8",
+        "min-h-screen bg-slate-50/60 pb-28 pt-8 md:pt-12 text-slate-900 selection:bg-emerald-500 selection:text-white",
         poppins.className,
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-6">
-        {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10">
+        {/* Header - Clean, Borderless & Spacious */}
+        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pb-2 border-b border-slate-200/60">
+          <div className="space-y-3">
             <div className="flex items-center gap-3 mb-2">
               <div className="h-8 w-1 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
               <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.25em]">
-                Requisitions
+                Requisitions Management
               </span>
-              <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-semibold text-slate-500 bg-slate-200/50 px-3 py-1 rounded-full">
                 {requisitions.length} total
               </span>
             </div>
             <h1
               className={cn(
-                "text-4xl md:text-5xl lg:text-6xl text-slate-900 leading-[1.1] tracking-tight",
+                "text-4xl sm:text-5xl lg:text-6xl text-slate-900 tracking-tight font-normal leading-[1.05]",
                 bebasNeue.className,
               )}
             >
@@ -714,165 +787,175 @@ export default function HospitalRequisitionPanel() {
                   ? "Assigned to Me"
                   : "All Requests"}
             </h1>
-            <p className="text-sm text-slate-700 mt-2 max-w-md">
+            <p className="text-sm sm:text-base font-normal text-slate-600 max-w-2xl leading-relaxed">
               {viewMode === "my"
-                ? "Requisitions you have created."
+                ? "Manage and track the progress of requisitions you have created."
                 : viewMode === "assigned"
-                  ? "Requisitions assigned to you for action."
-                  : "View all your requisitions and those assigned to you."}
+                  ? "Review and take action on requisitions assigned to you."
+                  : "Comprehensive overview of all your requisitions and those assigned to you."}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={refetch}
-              className="p-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+              className="p-3.5 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm group focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
               title="Refresh"
             >
-              <RefreshCw className="w-5 h-5 text-slate-700" />
+              <RefreshCw className="w-4 h-4 text-slate-600 group-hover:rotate-180 transition-transform duration-500" />
             </button>
             <button
               onClick={() => setModalOpen(true)}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-emerald-200/50 transition-all flex items-center gap-2 text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-2xl shadow-lg shadow-emerald-600/25 active:scale-[0.98] transition-all flex items-center gap-2.5 text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             >
-              <Plus className="w-4 h-4" /> New Request
+              <Plus className="w-4 h-4 stroke-[2.5]" /> New Request
             </button>
           </div>
         </header>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <StatCard
-            label="Total"
-            value={stats.total}
-            icon={ClipboardList}
-            color="slate"
-          />
-          <StatCard
-            label="Pending"
-            value={stats.pending}
-            icon={Clock}
-            color="amber"
-          />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <StatCard label="Total" value={stats.total} icon={ClipboardList} />
+          <StatCard label="Pending" value={stats.pending} icon={Clock} />
           <StatCard
             label="Approved"
             value={stats.approved}
             icon={CheckCircle}
-            color="blue"
           />
           <StatCard
             label="Fulfilled"
             value={stats.fulfilled}
             icon={CheckCircle}
-            color="emerald"
           />
-          <StatCard
-            label="Rejected"
-            value={stats.rejected}
-            icon={XCircle}
-            color="rose"
-          />
+          <StatCard label="Rejected" value={stats.rejected} icon={XCircle} />
         </div>
 
-        {/* View Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
-          <button
-            onClick={() => setViewMode("all")}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-              viewMode === "all"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-200/50"
-                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200",
-            )}
-          >
-            <ClipboardList className="w-4 h-4" />
-            All
-            <span className="text-xs bg-white/20 rounded-full px-2 py-0.5">
-              {requisitions.length}
-            </span>
-          </button>
-          <button
-            onClick={() => setViewMode("my")}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-              viewMode === "my"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-200/50"
-                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200",
-            )}
-          >
-            <Send className="w-4 h-4" />
-            My Requests
-            <span className="text-xs bg-white/20 rounded-full px-2 py-0.5">
-              {requisitions.filter((r) => r.requesterId === user?.id).length}
-            </span>
-          </button>
-          <button
-            onClick={() => setViewMode("assigned")}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-              viewMode === "assigned"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-200/50"
-                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200",
-            )}
-          >
-            <Inbox className="w-4 h-4" />
-            Assigned to Me
-            <span className="text-xs bg-white/20 rounded-full px-2 py-0.5">
-              {
-                requisitions.filter((r) => r.assignedToUserId === user?.id)
-                  .length
-              }
-            </span>
-          </button>
-        </div>
-
-        {/* Search & Status Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="relative flex-1 w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Search by item, requester, or assignee..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-500 outline-none transition"
-            />
+        {/* View Tabs & Search Filters Wrapper */}
+        <div className="bg-white p-5 sm:p-7 rounded-[2rem] border border-slate-200/85 shadow-xl shadow-slate-950/[0.02] space-y-6">
+          {/* View Tabs */}
+          <div className="flex flex-wrap gap-2.5 pb-6 border-b border-slate-100">
+            <button
+              onClick={() => setViewMode("all")}
+              className={cn(
+                "px-4.5 py-3 rounded-2xl text-sm font-medium transition-all flex items-center gap-2.5",
+                viewMode === "all"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 font-semibold"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100/80 border border-slate-200/70",
+              )}
+            >
+              <ClipboardList className="w-4 h-4" />
+              All
+              <span
+                className={cn(
+                  "text-xs rounded-full px-2 py-0.5",
+                  viewMode === "all"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/70 text-slate-600",
+                )}
+              >
+                {requisitions.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setViewMode("my")}
+              className={cn(
+                "px-4.5 py-3 rounded-2xl text-sm font-medium transition-all flex items-center gap-2.5",
+                viewMode === "my"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 font-semibold"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100/80 border border-slate-200/70",
+              )}
+            >
+              <Send className="w-4 h-4" />
+              My Requests
+              <span
+                className={cn(
+                  "text-xs rounded-full px-2 py-0.5",
+                  viewMode === "my"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/70 text-slate-600",
+                )}
+              >
+                {requisitions.filter((r) => r.requesterId === user?.id).length}
+              </span>
+            </button>
+            <button
+              onClick={() => setViewMode("assigned")}
+              className={cn(
+                "px-4.5 py-3 rounded-2xl text-sm font-medium transition-all flex items-center gap-2.5",
+                viewMode === "assigned"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 font-semibold"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100/80 border border-slate-200/70",
+              )}
+            >
+              <Inbox className="w-4 h-4" />
+              Assigned to Me
+              <span
+                className={cn(
+                  "text-xs rounded-full px-2 py-0.5",
+                  viewMode === "assigned"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/70 text-slate-600",
+                )}
+              >
+                {
+                  requisitions.filter((r) => r.assignedToUserId === user?.id)
+                    .length
+                }
+              </span>
+            </button>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {["all", "pending", "approved", "fulfilled", "rejected"].map(
-              (status) => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-medium transition border focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2",
-                    statusFilter === status
-                      ? "bg-emerald-600 text-white border-emerald-600"
-                      : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50",
-                  )}
-                >
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </button>
-              ),
-            )}
+
+          {/* Search & Status Filters */}
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+            <div className="relative flex-1 w-full lg:max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by item, requester, or assignee..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 bg-slate-50/70 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all shadow-inner"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap items-center">
+              {["all", "pending", "approved", "fulfilled", "rejected"].map(
+                (status) => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={cn(
+                      "px-4 py-2.5 rounded-xl text-xs font-semibold transition-all border focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2",
+                      statusFilter === status
+                        ? "bg-slate-900 text-white border-slate-900 shadow-md shadow-slate-950/10"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300",
+                    )}
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </button>
+                ),
+              )}
+            </div>
           </div>
         </div>
 
-        {/* List */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        {/* List Section */}
+        <div className="bg-white rounded-[2rem] border border-slate-200/85 shadow-xl shadow-slate-950/[0.02] overflow-hidden">
           {filtered.length === 0 ? (
-            <div className="p-12 text-center text-slate-500">
-              <ClipboardList className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <p className="font-semibold text-slate-700">
+            <div className="p-16 sm:p-24 text-center text-slate-500">
+              <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-5 text-emerald-600 shadow-sm">
+                <ClipboardList className="w-9 h-9 stroke-[1.8]" />
+              </div>
+              <p className="font-bold text-lg text-slate-800 tracking-tight">
                 No requisitions found
               </p>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
                 {searchTerm || statusFilter !== "all"
-                  ? "Try adjusting your filters"
+                  ? "Try adjusting your filters or search terms to find what you're looking for."
                   : viewMode === "my"
                     ? "You haven't created any requests yet."
                     : viewMode === "assigned"
                       ? "No requests have been assigned to you."
-                      : "No requests available."}
+                      : "No requests available at the moment."}
               </p>
             </div>
           ) : (
@@ -888,131 +971,140 @@ export default function HospitalRequisitionPanel() {
                   isPending &&
                   (req.assignedToUserId === user?.id ||
                     req.approverRole === String(user?.role) ||
-                    ["hospital_admin", "center_owner"].includes(
-                      String(user?.role),
-                    ));
+                    ["admin", "center_owner"].includes(String(user?.role)));
 
                 return (
                   <motion.div
                     key={req.id}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 hover:bg-slate-50/60 transition-colors"
+                    className="p-5 sm:p-7 hover:bg-emerald-50/[0.15] transition-all group"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                       <div className="flex items-start gap-4">
                         <div
                           className={cn(
-                            "p-2.5 rounded-xl border",
+                            "p-3.5 rounded-2xl border shadow-sm transition-transform group-hover:scale-105 shrink-0",
                             config.bg,
                             config.text,
                             config.border,
                           )}
                         >
-                          <TypeIcon className="w-5 h-5" />
+                          <TypeIcon className="w-5 h-5 stroke-[2.2]" />
                         </div>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-bold text-slate-900">
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <h3 className="font-bold text-base text-slate-900 tracking-tight">
                               {req.requesterName}
                             </h3>
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs font-medium text-slate-300">
+                              •
+                            </span>
+                            <span className="text-xs font-medium text-slate-500">
                               {new Date(req.createdAt).toLocaleDateString()}
                             </span>
                             {req.priority === "urgent" && (
-                              <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                                <AlertTriangle className="w-3 h-3" />
+                              <span className="inline-flex items-center gap-1 text-amber-700 text-xs font-semibold bg-amber-50 px-3 py-0.5 rounded-full border border-amber-200/80 shadow-sm">
+                                <AlertTriangle className="w-3 h-3 stroke-[2.2]" />
                                 Urgent
                               </span>
                             )}
                             {req.priority === "stat" && (
-                              <span className="inline-flex items-center gap-1 text-rose-600 text-xs font-medium bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                                <AlertTriangle className="w-3 h-3" />
+                              <span className="inline-flex items-center gap-1 text-rose-700 text-xs font-semibold bg-rose-50 px-3 py-0.5 rounded-full border border-rose-200/80 shadow-sm">
+                                <AlertTriangle className="w-3 h-3 stroke-[2.2]" />
                                 STAT
                               </span>
                             )}
                             {req.assignedToUserId && (
-                              <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
-                                <User className="w-3 h-3" />
+                              <span className="text-xs font-semibold bg-blue-50/80 text-blue-700 px-3 py-0.5 rounded-full border border-blue-200/80 flex items-center gap-1.5 shadow-sm">
+                                <User className="w-3 h-3 stroke-[2.2]" />
                                 {isAssignedToMe
                                   ? "Assigned to You"
                                   : req.assignedToName || "Assigned"}
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-slate-600">
-                            {req.items.length} item(s) ·{" "}
+                          <p className="text-sm font-medium text-slate-600 capitalize">
+                            {req.items.length} item(s){" "}
+                            <span className="text-slate-300">•</span>{" "}
                             {req.type.replace("-", " ")}
                             {req.assignedToName && !isAssignedToMe && (
-                              <span className="ml-2 text-xs text-slate-500">
+                              <span className="ml-2 text-xs text-slate-400 font-normal">
                                 → Assigned to {req.assignedToName}
                               </span>
                             )}
                           </p>
                           {req.clinicalNotes && (
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                            <p className="text-xs text-slate-500 mt-2 line-clamp-1 bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-200/60">
                               {req.clinicalNotes}
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-12 sm:ml-0 flex-wrap">
+
+                      <div className="flex items-center gap-3 flex-wrap pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                         <span
                           className={cn(
-                            "px-2.5 py-1 rounded-full text-xs font-medium border",
+                            "px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 shadow-sm",
                             config.bg,
                             config.text,
                             config.border,
                           )}
                         >
-                          <Icon className="w-3 h-3 inline mr-1" />{" "}
+                          <Icon className="w-3.5 h-3.5 stroke-[2.2]" />
                           {config.label}
                         </span>
-                        {showActions ? (
-                          <>
+
+                        {showActions && (
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleApproveClick(req.id)}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition flex items-center gap-1 shadow-sm focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                             >
-                              <CheckCircle className="w-3 h-3" /> Approve
+                              <CheckCircle className="w-3.5 h-3.5 stroke-[2.2]" />{" "}
+                              Approve
                             </button>
                             <button
                               onClick={() => handleRejectClick(req.id)}
-                              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg transition flex items-center gap-1 shadow-sm focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+                              className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-rose-600/20 flex items-center gap-1.5 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
                             >
-                              <XCircle className="w-3 h-3" /> Reject
+                              <XCircle className="w-3.5 h-3.5 stroke-[2.2]" />{" "}
+                              Reject
                             </button>
                             <button
                               onClick={() => handleEscalateClick(req.id)}
-                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition flex items-center gap-1 shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                             >
-                              <ArrowUp className="w-3 h-3" /> Escalate
+                              <ArrowUp className="w-3.5 h-3.5 stroke-[2.2]" />{" "}
+                              Escalate
                             </button>
-                          </>
-                        ) : null}
+                          </div>
+                        )}
+
                         <button
                           onClick={() => handleViewDetails(req)}
-                          className="p-1 text-slate-500 hover:text-slate-700 rounded focus:ring-2 focus:ring-emerald-500"
+                          className="p-2.5 bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 hover:border-slate-300 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
                           title="View details & approval chain"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4 stroke-[2.2]" />
                         </button>
+
                         {isEditable && (
-                          <>
+                          <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
                             <button
-                              className="p-1 text-emerald-600 hover:text-emerald-800 rounded focus:ring-2 focus:ring-emerald-500"
+                              className="p-2.5 bg-emerald-50 border border-emerald-200/60 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
                               title="Edit"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-4 h-4 stroke-[2.2]" />
                             </button>
                             <button
                               onClick={() => handleDelete(req.id)}
-                              className="p-1 text-rose-600 hover:text-rose-800 rounded focus:ring-2 focus:ring-emerald-500"
+                              className="p-2.5 bg-rose-50 border border-rose-200/60 text-rose-600 hover:text-rose-800 hover:bg-rose-100 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
                               title="Delete"
                             >
-                              <XCircle className="w-4 h-4" />
+                              <XCircle className="w-4 h-4 stroke-[2.2]" />
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1024,7 +1116,7 @@ export default function HospitalRequisitionPanel() {
         </div>
       </div>
 
-      {/* ── Create Modal ── */}
+      {/* ── Modals Section ── */}
       <RequisitionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -1035,7 +1127,6 @@ export default function HospitalRequisitionPanel() {
         }}
       />
 
-      {/* ── Detail Modal ── */}
       {showDetailModal && selectedRequisition && (
         <RequisitionDetailModal
           requisition={selectedRequisition}
@@ -1046,7 +1137,6 @@ export default function HospitalRequisitionPanel() {
         />
       )}
 
-      {/* ── Action Modals ── */}
       <ActionModal
         isOpen={showApproveModal}
         onClose={() => {
@@ -1079,7 +1169,6 @@ export default function HospitalRequisitionPanel() {
         loading={actionLoading}
       />
 
-      {/* Escalation Modal with Staff Selection */}
       <ActionModal
         isOpen={showEscalateModal}
         onClose={() => {
@@ -1099,13 +1188,13 @@ export default function HospitalRequisitionPanel() {
         setComment={setEscalateComment}
         loading={actionLoading}
       >
-        <div className="mt-3">
-          <label className="block text-xs font-medium text-slate-700 mb-1">
+        <div className="mt-4 space-y-2">
+          <label className="block text-xs font-semibold text-slate-700 tracking-wide uppercase">
             Select Staff *
           </label>
           <div className="relative">
-            <div className="flex items-center border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition">
-              <User className="w-4 h-4 text-slate-400 ml-3" />
+            <div className="flex items-center border border-slate-200 bg-slate-50/70 rounded-2xl focus-within:ring-2 focus-within:ring-blue-500/25 focus-within:border-blue-600 transition-all">
+              <User className="w-4 h-4 text-slate-400 ml-3.5" />
               <input
                 type="text"
                 placeholder="Search staff..."
@@ -1115,7 +1204,7 @@ export default function HospitalRequisitionPanel() {
                   setIsEscalateDropdownOpen(true);
                 }}
                 onFocus={() => setIsEscalateDropdownOpen(true)}
-                className="flex-1 px-3 py-2 bg-transparent outline-none text-sm text-slate-900 placeholder:text-slate-400"
+                className="flex-1 px-3 py-3 bg-transparent outline-none text-sm text-slate-900 placeholder:text-slate-400"
               />
               {escalateTargetUserId && (
                 <button
@@ -1124,21 +1213,21 @@ export default function HospitalRequisitionPanel() {
                     setEscalateTargetUserId(null);
                     setEscalateSearch("");
                   }}
-                  className="pr-2 text-slate-400 hover:text-slate-600"
+                  className="pr-3 text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
             {isEscalateDropdownOpen && (
-              <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+              <div className="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl max-h-56 overflow-y-auto p-1.5">
                 {loadingStaff ? (
-                  <div className="p-4 text-center text-sm text-slate-500">
-                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-1" />
-                    Loading staff...
+                  <div className="p-6 text-center text-sm text-slate-500 flex flex-col items-center justify-center">
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-600 mb-2" />
+                    Loading staff members...
                   </div>
                 ) : filteredEscalateStaff.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-slate-500">
+                  <div className="p-6 text-center text-sm text-slate-500">
                     No staff members found
                   </div>
                 ) : (
@@ -1164,18 +1253,18 @@ export default function HospitalRequisitionPanel() {
                           );
                           setIsEscalateDropdownOpen(false);
                         }}
-                        className="w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-0"
+                        className="w-full text-left px-3 py-2.5 hover:bg-slate-50 rounded-xl transition-all flex items-center gap-3 border-b border-slate-50 last:border-0"
                       >
                         <div
                           className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold",
+                            "w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm",
                             color,
                           )}
                         >
                           {initials}
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm font-medium text-slate-800">
+                          <div className="text-sm font-semibold text-slate-800">
                             {staff.personalInfo.fullName}
                           </div>
                           <div className="text-xs text-slate-500">
@@ -1183,7 +1272,7 @@ export default function HospitalRequisitionPanel() {
                           </div>
                         </div>
                         {escalateTargetUserId === staff.id && (
-                          <Check className="w-4 h-4 text-blue-600" />
+                          <Check className="w-4 h-4 text-blue-600 stroke-[2.5]" />
                         )}
                       </button>
                     );
@@ -1193,10 +1282,10 @@ export default function HospitalRequisitionPanel() {
             )}
           </div>
           {selectedEscalateStaff && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-blue-700 bg-blue-50 p-2 rounded-lg border border-blue-200">
+            <div className="mt-3 flex items-center gap-2.5 text-xs text-blue-800 bg-blue-50/80 p-3 rounded-2xl border border-blue-200/60 shadow-sm">
               <div
                 className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold",
+                  "w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm",
                   getAvatarColor(selectedEscalateStaff.personalInfo.fullName),
                 )}
               >
@@ -1209,8 +1298,10 @@ export default function HospitalRequisitionPanel() {
               </div>
               <span>
                 Escalating to{" "}
-                <strong>{selectedEscalateStaff.personalInfo.fullName}</strong> (
-                {selectedEscalateStaff.professional.role})
+                <strong className="font-semibold">
+                  {selectedEscalateStaff.personalInfo.fullName}
+                </strong>{" "}
+                ({selectedEscalateStaff.professional.role})
               </span>
             </div>
           )}
@@ -1220,33 +1311,29 @@ export default function HospitalRequisitionPanel() {
   );
 }
 
-// ─── Subcomponents ──────────────────────────────────────────────────
-function StatCard({ label, value, icon: Icon, color }: any) {
-  const colorMap: any = {
-    emerald: "bg-emerald-50 text-emerald-700",
-    amber: "bg-amber-50 text-amber-700",
-    blue: "bg-blue-50 text-blue-700",
-    rose: "bg-rose-50 text-rose-700",
-    slate: "bg-slate-100 text-slate-700",
-  };
+function StatCard({ label, value, icon: Icon }: any) {
   return (
-    <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+    <div className="group relative overflow-hidden bg-white p-5 rounded-3xl border border-slate-200/80 hover:border-emerald-300 transition-all duration-300 shadow-xl shadow-slate-950/5 hover:shadow-2xl hover:-translate-y-0.5">
+      {/* Ambient decorative glow */}
+      <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-emerald-400/20" />
+
+      <div className="relative z-10 flex items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
             {label}
           </p>
           <p
             className={cn(
-              "text-2xl font-bold text-slate-800",
+              "text-3xl md:text-4xl font-normal tracking-tight leading-none text-slate-900",
               bebasNeue.className,
             )}
           >
             {value}
           </p>
         </div>
-        <div className={cn("p-2.5 rounded-xl", colorMap[color])}>
-          <Icon className="w-4 h-4" />
+
+        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 transition-transform duration-300 group-hover:scale-110 shrink-0">
+          <Icon className="w-5 h-5 stroke-[2.2]" />
         </div>
       </div>
     </div>

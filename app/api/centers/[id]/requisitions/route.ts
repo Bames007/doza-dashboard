@@ -80,9 +80,7 @@ export async function GET(
         }))
       : [];
 
-    const isAdmin = ["hospital_admin", "center_owner", "admin"].includes(
-      userRole,
-    );
+    const isAdmin = ["center_owner", "admin"].includes(userRole);
     const isApprover = ["head-nurse", "lab-manager", "cmo", "owner"].includes(
       userRole,
     );

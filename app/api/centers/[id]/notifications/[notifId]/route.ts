@@ -35,12 +35,15 @@ export async function PATCH(
       );
     }
     const old = snapshot.val();
-    if (old.userId !== userId) {
+
+    // Allow if the notification is for this user OR is a "center" notification
+    if (old.userId !== userId && old.userId !== "center") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 403 },
       );
     }
+
     await update(ref(db, refPath), { read: true });
 
     cache.set(`notifications:${centerId}:${userId}`, null, 0);

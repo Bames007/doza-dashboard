@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Firebase query
-    const dozaUsersRef = ref(db, "doza_users");
+    const dozaUsersRef = ref(db, "doza/users");
     const q = query(dozaUsersRef, orderByChild("centerId"), equalTo(centerId));
     const snapshot = await get(q);
 
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check existing user
-    const dozaUsersRef = ref(db, "doza_users");
+    const dozaUsersRef = ref(db, "doza/users");
     const snapshot = await get(dozaUsersRef);
     let existingUser: DozaUser | null = null;
     if (snapshot.exists()) {
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
 
     const newRef = push(dozaUsersRef);
     await update(ref(db), {
-      [`doza_users/${newRef.key}`]: dozaUserData,
+      [`doza/users/${newRef.key}`]: dozaUserData,
     });
 
     // Invalidate cache for this center

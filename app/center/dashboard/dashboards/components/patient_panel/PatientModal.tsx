@@ -3,20 +3,23 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
-import { bebasNeue, poppins } from "@/app/utils/constants";
+import { bebasNeue } from "@/app/utils/constants";
 import { cn } from "@/app/utils/utils";
 import type { Patient } from "../../hooks/usePatients";
+import type { PatientCenterConfig } from "../../../types/patientCenterConfig";
 
 interface PatientModalProps {
   patient: Patient | null;
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
+  centerConfig?: PatientCenterConfig; // NEW
 }
 
 export default function PatientModal({
   patient,
   onClose,
   onSave,
+  centerConfig, // NEW
 }: PatientModalProps) {
   const [formData, setFormData] = useState({
     fullName: patient?.fullName || "",
@@ -39,9 +42,20 @@ export default function PatientModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await onSave(formData);
+    // If patient type toggle is hidden, force outpatient
+    const dataToSave = {
+      ...formData,
+      patientType:
+        centerConfig?.showInpatientToggle !== false
+          ? formData.patientType
+          : "outpatient",
+    };
+    await onSave(dataToSave);
     setLoading(false);
   };
+
+  // Determine if we should show patient type selector
+  const showPatientType = centerConfig?.showInpatientToggle !== false;
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
@@ -140,20 +154,25 @@ export default function PatientModal({
               </select>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Patient Type
-            </label>
-            <select
-              name="patientType"
-              value={formData.patientType}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
-            >
-              <option value="outpatient">Outpatient</option>
-              <option value="inpatient">Inpatient</option>
-            </select>
-          </div>
+
+          {/* Patient Type – only shown if config allows */}
+          {showPatientType && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Patient Type
+              </label>
+              <select
+                name="patientType"
+                value={formData.patientType}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+              >
+                <option value="outpatient">Outpatient</option>
+                <option value="inpatient">Inpatient</option>
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Address

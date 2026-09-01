@@ -80,3 +80,56 @@ body {
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+/* ============================================================
+   PREMIUM ULTRA-MODERN SCROLLBAR (EMERALD THEME)
+   ============================================================ */
+
+/* Firefox Support */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.3) transparent;
+}
+
+/* Chrome / Safari / Edge Track Width */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Track Area (Invisible & padded) */
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+/* Floating Scrollbar Thumb (Idle State) */
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(16, 185, 129, 0.22); /* Subtle emerald tint */
+  border-radius: 9999px;
+  border: 1.5px solid transparent; /* Creates floating margin effect */
+  background-clip: padding-box;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When user hovers anywhere over the nav menu */
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(16, 185, 129, 0.5); /* Medium emerald fill */
+}
+
+/* When direct hover/drag on the scrollbar thumb */
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(
+    to bottom,
+    #34d399,
+    #10b981,
+    #059669
+  ) !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  border: 0px solid transparent;
+}
+
+/* Clean up corner joints if horizontal scroll ever appears */
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}

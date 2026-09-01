@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { DashboardState, User, Center } from "../type";
 import { useNetworkStatus } from "@/app/hooks/useNetworkStatus";
 import { processOfflineQueue } from "@/app/lib/api";
+import DebugPanel from "./panels/DebugPanel";
 
 interface DashboardContextType extends Omit<DashboardState, "user" | "center"> {
   toggleSidebar: () => void;
@@ -275,9 +276,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               userData.fullName || centerData?.ownerInfo?.fullName || "User",
             role:
               userData.role ||
-              (centerData?.ownerInfo?.isOwner
-                ? "center_owner"
-                : "hospital_admin"),
+              (centerData?.ownerInfo?.isOwner ? "center_owner" : "admin"),
             position:
               userData.position || centerData?.ownerInfo?.position || "Staff",
             avatar: userData.avatar,
@@ -439,6 +438,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <DashboardContext.Provider value={value}>
       {children}
+
+      <DebugPanel />
     </DashboardContext.Provider>
   );
 };

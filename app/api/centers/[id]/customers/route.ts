@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: cached });
     }
 
-    const usersRef = ref(db, "doza_users");
+    const usersRef = ref(db, "doza/users");
     const usersSnapshot = await get(usersRef);
     let users: any[] = [];
     if (usersSnapshot.exists()) {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const usersRef = ref(db, "doza_users");
+    const usersRef = ref(db, "doza/users");
     const usersSnapshot = await get(usersRef);
     if (usersSnapshot.exists()) {
       const usersData = usersSnapshot.val();

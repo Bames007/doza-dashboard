@@ -37,6 +37,7 @@ import HospitalDrugPurchasePanel from "./panels/hospital_panels/HospitalDrugPurc
 import HospitalMedicationDispensingPanel from "./panels/hospital_panels/HospitalMedicationDispensingPanel";
 import HospitalApprovalPanel from "./panels/hospital_panels/HospitalApprovalPanel";
 import HospitalRequisitionPanel from "./panels/hospital_panels/HospitalRequisitionPanel";
+import DozaRequestsPanel from "./panels/DozaRequestPanel";
 
 export default function PanelRenderer() {
   const { activePanel, center, user, setCenter } = useDashboard();
@@ -76,6 +77,8 @@ export default function PanelRenderer() {
         return <DashboardPanel />;
       case "analytics":
         return <AnalyticsPanel />;
+      case "doza-requests":
+        return <DozaRequestsPanel />;
       case "auditlogs":
         return <AuditLogsPanel />;
       case "dozaNetwork":

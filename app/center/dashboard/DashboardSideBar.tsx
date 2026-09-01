@@ -27,6 +27,7 @@ interface NavigationItemWithPanel extends NavigationItem {
 const panelToPageName: Record<string, string> = {
   dashboard: "Dashboard",
   "facility-services": "Facility & Services",
+  "doza-requests": "Doza Requests",
   sales: "Sales",
   auditlogs: "Audit Logs",
   dozaNetwork: "Doza Network",
@@ -54,6 +55,7 @@ const panelToPageName: Record<string, string> = {
 const hrefToPanelMap: Record<string, string> = {
   "/dashboard": "dashboard",
   "/dashboard/facility": "facility-services",
+  "/dashboard/doza-requests": "doza-requests",
   "/dashboard/analytics": "analytics",
   "/dashboard/auditlogs": "auditlogs",
   "/dashboard/approvals": "approvals",
@@ -427,8 +429,8 @@ export default function DashboardSidebar({
       </div>
 
       {/* 2. MAIN NAVIGATION */}
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto no-scrollbar">
-        <p className="text-[9px] font-black text-emerald-200 uppercase tracking-[0.2em] px-4 mb-3">
+      <nav className="flex-1 pl-4 pr-3 space-y-1 overflow-y-auto custom-scrollbar scroll-smooth">
+        <p className="text-[9px] font-black text-emerald-200 uppercase tracking-[0.2em] px-2 mb-3">
           Medical Suite
         </p>
         {[...mainNav, ...extraNav].map((item) => {
@@ -439,7 +441,7 @@ export default function DashboardSidebar({
               key={item.name}
               onClick={() => navigateToPanel(item.panelId, item.name)}
               className={cn(
-                "w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-300 group relative",
+                "w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-300 group relative",
                 isActive
                   ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
                   : "text-slate-500 hover:bg-emerald-50 hover:text-emerald-600",

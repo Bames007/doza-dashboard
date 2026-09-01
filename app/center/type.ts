@@ -12,7 +12,7 @@ export interface User {
 
 export type UserRole =
   | "super_admin"
-  | "hospital_admin"
+  | "admin"
   | "doctor"
   | "nurse"
   | "receptionist"
@@ -21,6 +21,8 @@ export type UserRole =
   | "center_owner"
   | "pharmacy_nurse"
   | "hospital_nurse"
+  | "accountant"
+  | "hr"
   | "center_head";
 
 export type CenterType =

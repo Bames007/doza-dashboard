@@ -203,7 +203,7 @@ export async function PUT(
     // Permission check
     const isOriginalVerifier = existing.verifiedBy?.userId === userId;
     const userRole = request.headers.get("x-user-role");
-    const isAdmin = userRole === "super_admin" || userRole === "hospital_admin";
+    const isAdmin = userRole === "super_admin" || userRole === "admin";
 
     if (!isOriginalVerifier && !isAdmin) {
       return NextResponse.json(
@@ -362,7 +362,7 @@ export async function DELETE(
       );
     }
 
-    if (userRole !== "super_admin" && userRole !== "hospital_admin") {
+    if (userRole !== "super_admin" && userRole !== "admin") {
       return NextResponse.json(
         {
           success: false,

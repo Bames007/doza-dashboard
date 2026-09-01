@@ -460,7 +460,7 @@ export default function HospitalApprovalPanel() {
   // Visibility based on role
   const visibleRequisitions = useMemo(() => {
     const role = String(user?.role || "");
-    const isAdmin = role === "hospital_admin" || role === "center_owner";
+    const isAdmin = role === "admin" || role === "center_owner";
     const isApprover = [
       "admin",
       "owner",
@@ -791,9 +791,7 @@ export default function HospitalApprovalPanel() {
                   isPending &&
                   (req.approverRole === String(user?.role) ||
                     req.assignedToUserId === user?.id ||
-                    ["hospital_admin", "center_owner"].includes(
-                      String(user?.role),
-                    ));
+                    ["admin", "center_owner"].includes(String(user?.role)));
 
                 return (
                   <motion.div
