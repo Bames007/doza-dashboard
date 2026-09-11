@@ -58,6 +58,13 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const clearFieldError = (fieldName: string) => {
+    setFieldErrors((prev) => ({
+      ...prev,
+      [fieldName]: "",
+    }));
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
@@ -71,6 +78,7 @@ const LoginPage: React.FC = () => {
     }));
 
     setError("");
+    clearFieldError(name);
     const fieldError = validateField(name, value);
     setFieldErrors((prev) => ({
       ...prev,
@@ -94,6 +102,11 @@ const LoginPage: React.FC = () => {
       !formData.centerName.trim() ||
       !formData.otp.trim()
     );
+  };
+
+  const handleGetHelp = () => {
+    window.location.href =
+      "mailto:support@doza.com?subject=Login Assistance&body=Please help me with login access to my healthcare center.";
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -177,6 +190,7 @@ const LoginPage: React.FC = () => {
       }
 
       if (data.success) {
+        // Set secure HTTP‑only cookies
         const sessionResponse = await fetch("/api/auth/set-session", {
           method: "POST",
           headers: {
@@ -191,6 +205,7 @@ const LoginPage: React.FC = () => {
           throw new Error("Failed to create secure session");
         }
 
+        // Store session data in localStorage
         const sessionWithExpiry = {
           ...data.data,
           expiresAt: Date.now() + 24 * 60 * 60 * 1000,
@@ -204,6 +219,13 @@ const LoginPage: React.FC = () => {
         localStorage.setItem("loginTime", new Date().toISOString());
         localStorage.setItem("lastActivity", Date.now().toString());
 
+        // ─── CRITICAL: set individual keys for api.ts authentication ───
+        localStorage.setItem("userId", data.data.user.id);
+        localStorage.setItem("userName", data.data.user.fullName);
+        localStorage.setItem("userRole", data.data.user.role);
+        // ──────────────────────────────────────────────────────────────────
+
+        // Cross‑tab logout listener
         window.addEventListener("storage", (e) => {
           if (e.key === "logout") {
             localStorage.clear();
@@ -238,25 +260,12 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleGetHelp = () => {
-    window.location.href =
-      "mailto:support@doza.com?subject=Login Assistance&body=Please help me with login access to my healthcare center.";
-  };
-
-  const clearFieldError = (fieldName: string) => {
-    setFieldErrors((prev) => ({
-      ...prev,
-      [fieldName]: "",
-    }));
-  };
-
   return (
     <div
       className={`min-h-screen bg-slate-50 selection:bg-emerald-100 ${poppins.className}`}
     >
       <AnimatePresence>{loading && <LoadingScreen />}</AnimatePresence>
 
-      {/* Dynamic Background Blurs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-100/40 rounded-full blur-[120px]" />
         <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-blue-100/40 rounded-full blur-[120px]" />

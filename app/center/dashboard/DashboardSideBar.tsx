@@ -86,6 +86,7 @@ const hrefToPanelMap: Record<string, string> = {
   "/dashboard/quality-control": "quality-control",
   "/dashboard/results": "results",
   "/dashboard/samples": "samples",
+  "/dashboard/subscription": "subscription",
 };
 
 // ------------------------------------------------------------------------------

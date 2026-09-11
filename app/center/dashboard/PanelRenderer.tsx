@@ -38,6 +38,7 @@ import HospitalMedicationDispensingPanel from "./panels/hospital_panels/Hospital
 import HospitalApprovalPanel from "./panels/hospital_panels/HospitalApprovalPanel";
 import HospitalRequisitionPanel from "./panels/hospital_panels/HospitalRequisitionPanel";
 import DozaRequestsPanel from "./panels/DozaRequestPanel";
+import SubscriptionCenterPanel from "./panels/SubscriptionPanel";
 
 export default function PanelRenderer() {
   const { activePanel, center, user, setCenter } = useDashboard();
@@ -149,6 +150,9 @@ export default function PanelRenderer() {
         return <ResultsPanel />;
       case "samples":
         return <SamplesPanel />;
+
+      case "subscription":
+        return <SubscriptionCenterPanel />;
       default:
         return <DashboardPanel />;
     }
