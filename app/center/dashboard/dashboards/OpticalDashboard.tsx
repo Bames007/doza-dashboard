@@ -1,4 +1,3 @@
-// app/center/dashboard/dashboards/OpticalDashboard.tsx
 "use client";
 
 import { useDashboard } from "../DashboardContext";
@@ -18,10 +17,21 @@ export default function OpticalDashboard() {
   const { inventory, loading: invLoading } = useOpticalInventory(center?.id);
   const { exams, loading: examLoading } = useEyeExams(center?.id);
   const { orders, loading: orderLoading } = useLensOrders(center?.id);
-  const { appointments, loading: aptLoading } = useAppointments(
-    center?.id,
-    "optical",
-  );
+
+  // ✅ Single options object — matches hook signature
+  const { appointments, loading: aptLoading } = useAppointments({
+    serviceType: "optical",
+  });
+
+  // ✅ Compute the metrics the dashboard actually needs
+  const fittingsToday = appointments.length;
+  const avgFittingTime =
+    fittingsToday > 0
+      ? Math.round(
+          appointments.reduce((sum, a: any) => sum + (a.duration || 20), 0) /
+            fittingsToday,
+        )
+      : 0;
 
   return (
     <div className="space-y-8">
@@ -61,13 +71,13 @@ export default function OpticalDashboard() {
         />
         <StatsCard
           label="Avg. Fitting Time"
-          value={`${appointments.avgFittingTime} min`}
-          change={`${appointments.fittingsToday} today`}
+          value={`${avgFittingTime} min`}
+          change={`${fittingsToday} today`}
           icon={Clock}
           color="green"
           subtext="Per patient"
           loading={aptLoading}
-          trend={appointments.avgFittingTime < 20 ? "up" : "down"}
+          trend={avgFittingTime < 20 ? "up" : "down"}
           index={3}
         />
       </div>

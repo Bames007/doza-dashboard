@@ -19,7 +19,6 @@ export class ApiWrapper {
   }
 
   async get(endpoint: string, params?: Record<string, any>) {
-    // ✅ Guard against SSR – window may be undefined
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = new URL(endpoint, origin);
 

@@ -84,10 +84,10 @@ function calculateConfidenceScore(drug: any): number {
   return Math.min(100, Math.round((score / totalWeight) * 100));
 }
 
-// ---------- GET (read‑only, no audit) ----------
+// ---------- GET (read-only, no audit) ----------
 export async function GET(
   request: NextRequest,
-  context: { params: { drugId: string } },
+  context: { params: Promise<{ drugId: string }> },
 ) {
   let drugId = "";
   try {
@@ -149,7 +149,7 @@ export async function GET(
 // ---------- PUT (mutation – with audit) ----------
 export async function PUT(
   request: NextRequest,
-  context: { params: { drugId: string } },
+  context: { params: Promise<{ drugId: string }> },
 ) {
   let drugId = "";
   let userId = "";
@@ -235,7 +235,6 @@ export async function PUT(
 
     if (status) {
       updateData.status = status;
-      // Award points if status becomes verified
       if (status === "verified" && existing.status !== "verified") {
         const pointsToAward = 10;
         const verifierId = existing.verifiedBy?.userId;
@@ -277,7 +276,6 @@ export async function PUT(
 
     await set(drugRef, updateData);
 
-    // Audit log via shared utility
     await writeAuditLog({
       centerId:
         existing.centerId || request.headers.get("x-center-id") || "unknown",
@@ -293,7 +291,6 @@ export async function PUT(
       userAgent: request.headers.get("user-agent") || "unknown",
     });
 
-    // Also store detailed audit in dedicated node
     await set(ref(db, `doza_drugsdb/${drugId}/auditLogs/${Date.now()}`), {
       action: "UPDATE",
       userId,
@@ -305,7 +302,6 @@ export async function PUT(
       newData: updateData,
     });
 
-    // Invalidate cache
     cache.set(`drug:${drugId}`, null, 0);
 
     logger.info({ drugId, userId }, "Drug updated");
@@ -330,7 +326,7 @@ export async function PUT(
 // ---------- DELETE (mutation – with audit) ----------
 export async function DELETE(
   request: NextRequest,
-  context: { params: { drugId: string } },
+  context: { params: Promise<{ drugId: string }> },
 ) {
   let drugId = "";
   let userId = "";
@@ -386,7 +382,6 @@ export async function DELETE(
     const existing = snapshot.val();
     const timestamp = new Date().toISOString();
 
-    // Soft delete
     const deleteData = {
       ...existing,
       status: "deleted",
@@ -397,7 +392,6 @@ export async function DELETE(
     };
     await set(drugRef, deleteData);
 
-    // Audit log via shared utility
     await writeAuditLog({
       centerId:
         existing.centerId || request.headers.get("x-center-id") || "unknown",
@@ -413,7 +407,6 @@ export async function DELETE(
       userAgent: request.headers.get("user-agent") || "unknown",
     });
 
-    // Detailed audit
     await set(ref(db, `doza_drugsdb/${drugId}/auditLogs/${Date.now()}`), {
       action: "DELETE",
       userId,
@@ -423,7 +416,6 @@ export async function DELETE(
       previousData: existing,
     });
 
-    // Update stats
     const statsRef = ref(db, "doza_drugsdb/_stats");
     const statsSnap = await get(statsRef);
     const currentStats = statsSnap.exists()
@@ -435,7 +427,6 @@ export async function DELETE(
       lastUpdated: timestamp,
     });
 
-    // Invalidate cache
     cache.set(`drug:${drugId}`, null, 0);
 
     logger.info({ drugId, userId }, "Drug soft-deleted");
@@ -454,7 +445,7 @@ export async function DELETE(
 // ---------- POST (Review – mutation with audit) ----------
 export async function POST(
   request: NextRequest,
-  context: { params: { drugId: string } },
+  context: { params: Promise<{ drugId: string }> },
 ) {
   let drugId = "";
   let userId = "";
@@ -522,7 +513,6 @@ export async function POST(
       reviewData,
     );
 
-    // Update drug review stats
     const updatedDrug = {
       ...existing,
       reviewCount: (existing.reviewCount || 0) + 1,
@@ -534,7 +524,6 @@ export async function POST(
     };
     await set(drugRef, updatedDrug);
 
-    // Audit log
     await writeAuditLog({
       centerId:
         existing.centerId || request.headers.get("x-center-id") || "unknown",
@@ -550,7 +539,6 @@ export async function POST(
       userAgent: request.headers.get("user-agent") || "unknown",
     });
 
-    // Invalidate cache
     cache.set(`drug:${drugId}`, null, 0);
 
     logger.info({ drugId, reviewId, userId }, "Review added");
