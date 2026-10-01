@@ -1,16 +1,16 @@
 {
-    "name": "Doza | AI-Powered Healthcare Platform",
-    "short_name": "Doza",
-    "description": "AI-powered healthcare platform connecting patients, medical professionals, and healthcare centers through comprehensive tools and free EMR systems.",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#f0f9ff",
-    "theme_color": "#017840",
-    "orientation": "portrait-primary",
+    "name": "Doza Center: Manage Your Healthcare Facility",
+    "short_name": "Doza Center",
+    "description": "The command centre for your facility. Manage patients, staff, appointments, and records — all in one connected workspace.",
+    "start_url": "https://centers.dozamedic.com/",
+    "id": "com.dozamedic.web.centers",
     "scope": "/",
-    "id": "/",
-    "lang": "en-US",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#ffffff",
+    "theme_color": "#065f46",
     "dir": "ltr",
+    "lang": "en-US",
     "categories": [
         "health",
         "medical",
@@ -19,43 +19,7 @@
     "icons": [
         {
             "src": "/logo.png",
-            "sizes": "72x72",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/logo.png",
-            "sizes": "96x96",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/logo.png",
-            "sizes": "128x128",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/logo.png",
-            "sizes": "144x144",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/logo.png",
-            "sizes": "152x152",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/logo.png",
             "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "/logo.png",
-            "sizes": "384x384",
             "type": "image/png",
             "purpose": "any"
         },
@@ -63,7 +27,48 @@
             "src": "/logo.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Patient List",
+            "short_name": "Patients",
+            "description": "View all registered patients",
+            "url": "https://centers.dozamedic.com/patients",
+            "icons": [
+                {
+                    "src": "/logo.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Staff Directory",
+            "short_name": "Staff",
+            "description": "Manage your care team",
+            "url": "https://centers.dozamedic.com/staff",
+            "icons": [
+                {
+                    "src": "/logo.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Appointments",
+            "short_name": "Appointments",
+            "description": "Today's schedule and bookings",
+            "url": "https://centers.dozamedic.com/appointments",
+            "icons": [
+                {
+                    "src": "/logo.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
         }
     ],
     "screenshots": [
@@ -72,52 +77,14 @@
             "sizes": "375x812",
             "type": "image/png",
             "form_factor": "narrow",
-            "label": "Doza mobile interface"
+            "label": "Doza Center on mobile"
         },
         {
             "src": "/screenshot-desktop.png",
             "sizes": "1920x1080",
             "type": "image/png",
             "form_factor": "wide",
-            "label": "Doza desktop dashboard"
-        }
-    ],
-    "shortcuts": [
-        {
-            "name": "New Appointment",
-            "short_name": "Appointment",
-            "description": "Book a new medical appointment",
-            "url": "/appointments/new",
-            "icons": [
-                {
-                    "src": "/icon-appointment.png",
-                    "sizes": "96x96"
-                }
-            ]
-        },
-        {
-            "name": "Scan Barcode",
-            "short_name": "Scan",
-            "description": "Scan medicine or product barcode",
-            "url": "/scan",
-            "icons": [
-                {
-                    "src": "/icon-scan.png",
-                    "sizes": "96x96"
-                }
-            ]
-        },
-        {
-            "name": "Medical Records",
-            "short_name": "Records",
-            "description": "View your medical records",
-            "url": "/records",
-            "icons": [
-                {
-                    "src": "/icon-records.png",
-                    "sizes": "96x96"
-                }
-            ]
+            "label": "Doza Center admin dashboard"
         }
     ],
     "related_applications": [],
