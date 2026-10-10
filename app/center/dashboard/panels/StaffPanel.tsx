@@ -65,11 +65,7 @@ interface ApiResponse {
   error?: string;
 }
 
-export default function StaffPanel({
-  center,
-  user,
-  onUpdate,
-}: StaffPanelProps) {
+export default function StaffPanel({ center, user }: StaffPanelProps) {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -110,6 +106,7 @@ export default function StaffPanel({
 
   useEffect(() => {
     if (center?.id) loadStaff();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center]);
 
   const handleStaffAdded = async (
@@ -202,7 +199,8 @@ export default function StaffPanel({
     }
   };
 
-  // Helpers
+  // ─── Helpers ────────────────────────────────────────────────
+
   const getRoleCounts = () => {
     const counts = {
       owner: 0,
@@ -253,35 +251,26 @@ export default function StaffPanel({
       .toUpperCase()
       .slice(0, 2);
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
       case "active":
         return {
-          bg: "bg-emerald-50",
-          text: "text-emerald-700",
-          border: "border-emerald-200",
+          pill: "bg-emerald-50 text-emerald-700 border-emerald-200",
           dot: "bg-emerald-500",
-        };
-      case "inactive":
-        return {
-          bg: "bg-slate-50",
-          text: "text-slate-700",
-          border: "border-slate-200",
-          dot: "bg-slate-400",
+          label: "Active",
         };
       case "on_leave":
         return {
-          bg: "bg-amber-50",
-          text: "text-amber-700",
-          border: "border-amber-200",
-          dot: "bg-amber-500",
+          pill: "bg-slate-100 text-slate-700 border-slate-200",
+          dot: "bg-slate-500",
+          label: "On Leave",
         };
+      case "inactive":
       default:
         return {
-          bg: "bg-slate-50",
-          text: "text-slate-700",
-          border: "border-slate-200",
+          pill: "bg-slate-100 text-slate-600 border-slate-200",
           dot: "bg-slate-400",
+          label: "Inactive",
         };
     }
   };
@@ -316,271 +305,186 @@ export default function StaffPanel({
   const filteredStaff = getFilteredStaff();
 
   const roleOptions = [
-    { value: "all", label: "All Roles", count: staff.length, icon: Users },
-    { value: "owner", label: "Owners", count: roleCounts.owner, icon: Crown },
-    {
-      value: "doctor",
-      label: "Doctors",
-      count: roleCounts.doctor,
-      icon: BriefcaseMedical,
-    },
-    { value: "nurse", label: "Nurses", count: roleCounts.nurse, icon: Shield },
-    { value: "admin", label: "Admins", count: roleCounts.admin, icon: UserCog },
-    {
-      value: "technician",
-      label: "Technicians",
-      count: roleCounts.technician,
-      icon: Activity,
-    },
-    {
-      value: "support",
-      label: "Support",
-      count: roleCounts.support,
-      icon: Users,
-    },
-    {
-      value: "other",
-      label: "Other",
-      count: roleCounts.other,
-      icon: UserCheck,
-    },
+    { value: "all", label: "All Roles", count: staff.length },
+    { value: "owner", label: "Owners", count: roleCounts.owner },
+    { value: "doctor", label: "Doctors", count: roleCounts.doctor },
+    { value: "nurse", label: "Nurses", count: roleCounts.nurse },
+    { value: "admin", label: "Admins", count: roleCounts.admin },
+    { value: "technician", label: "Technicians", count: roleCounts.technician },
+    { value: "support", label: "Support", count: roleCounts.support },
+    { value: "other", label: "Other", count: roleCounts.other },
   ];
 
   const statusOptions = [
-    { value: "all", label: "All", count: staff.length },
+    { value: "all", label: "All Status", count: staff.length },
     { value: "active", label: "Active", count: statusCounts.active },
     { value: "inactive", label: "Inactive", count: statusCounts.inactive },
     { value: "on_leave", label: "On Leave", count: statusCounts.on_leave },
+  ];
+
+  // Compact stat pills
+  const statItems = [
+    { label: "Total", value: staff.length, tone: "emerald" as const },
+    { label: "Owners", value: roleCounts.owner, tone: "amber" as const },
+    { label: "Doctors", value: roleCounts.doctor, tone: "emerald" as const },
+    { label: "Nurses", value: roleCounts.nurse, tone: "emerald" as const },
+    { label: "Admins", value: roleCounts.admin, tone: "emerald" as const },
+    {
+      label: "Technicians",
+      value: roleCounts.technician,
+      tone: "emerald" as const,
+    },
+    { label: "Active", value: statusCounts.active, tone: "emerald" as const },
+    {
+      label: "Inactive",
+      value: statusCounts.inactive,
+      tone: "slate" as const,
+    },
+    {
+      label: "On Leave",
+      value: statusCounts.on_leave,
+      tone: "slate" as const,
+    },
   ];
 
   // ----------------------------------------------------------------------------
   // RENDER
   // ----------------------------------------------------------------------------
   return (
-    <div
-      className={cn(
-        "min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50/50 pb-40 pt-6",
-        poppins.className,
-      )}
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="max-w-7xl mx-auto px-4 md:px-6"
-      >
-        {/* --- HEADER --- */}
-        <header className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-8 w-1 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
-              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.25em]">
+    <div className={cn("min-h-screen bg-[#F8FAFC] pb-24", poppins.className)}>
+      <div className="max-w-7xl mx-auto px-3 md:px-6">
+        {/* ─── Compact header ─────────────────────────────────── */}
+        <header className="pt-3 md:pt-6 mb-3 md:mb-5">
+          {/* Row 1: eyebrow + add button */}
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+              <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 uppercase tracking-[0.15em] truncate">
                 Team Management
               </span>
-              <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                {staff.length} members
+              <span className="text-[9px] md:text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
+                {staff.length}
               </span>
             </div>
-            <h1
-              className={cn(
-                "text-4xl md:text-5xl lg:text-6xl text-slate-900 leading-[1.1] tracking-tight",
-                bebasNeue.className,
-              )}
+            <button
+              onClick={() => setIsAddStaffModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all text-[11px] md:text-xs font-bold uppercase tracking-wide shadow-sm shrink-0"
             >
-              Staff <span className="text-emerald-600">Overview</span>
-            </h1>
-            <p className="text-sm text-slate-600 mt-2 max-w-md">
-              Manage your team at{" "}
-              <span className="font-semibold text-slate-800">
-                {center.centerName || "Medical Center"}
-              </span>
-            </p>
+              <UserPlus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              Add Staff
+            </button>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setIsAddStaffModalOpen(true)}
-            className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-7 py-3.5 rounded-2xl font-bold text-[11px] uppercase tracking-[0.15em] hover:shadow-xl hover:shadow-emerald-200/50 transition-all flex items-center gap-2.5 shadow-lg shadow-emerald-200/30"
+
+          {/* Row 2: title */}
+          <h1
+            className={cn(
+              "text-2xl md:text-4xl text-slate-900 leading-none tracking-tight mb-1",
+              bebasNeue.className,
+            )}
           >
-            <UserPlus size={17} className="stroke-[2.5]" /> Add Staff
-          </motion.button>
+            Staff Overview
+          </h1>
+          <p className="text-[11px] md:text-xs text-slate-500 truncate">
+            Managing{" "}
+            <span className="font-semibold text-slate-700">
+              {center.centerName || "Medical Center"}
+            </span>
+          </p>
+
+          {/* Row 3: horizontal scroll stat pills on mobile, grid on desktop */}
+          <div className="-mx-3 px-3 md:mx-0 md:px-0 mt-3 md:mt-4 flex md:grid md:grid-cols-5 lg:grid-cols-9 gap-2 md:gap-2.5 overflow-x-auto md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+            {statItems.map((stat, i) => (
+              <StatPill
+                key={i}
+                label={stat.label}
+                value={stat.value}
+                tone={stat.tone}
+              />
+            ))}
+          </div>
         </header>
 
-        {/* --- SAVE STATUS --- */}
+        {/* ─── Save Status ────────────────────────────────────── */}
         <AnimatePresence>
           {saveStatus !== "idle" && (
             <motion.div
-              initial={{ opacity: 0, y: -12, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -12, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
               className={cn(
-                "rounded-2xl p-4 border-2 backdrop-blur-sm mb-7 shadow-sm",
+                "rounded-xl p-2.5 md:p-3 border mb-3 flex items-center gap-2 text-[11px] md:text-xs",
                 saveStatus === "success" &&
-                  "bg-emerald-50/90 border-emerald-200 text-emerald-800",
+                  "bg-emerald-50 border-emerald-200 text-emerald-700",
                 saveStatus === "error" &&
-                  "bg-rose-50/90 border-rose-200 text-rose-800",
+                  "bg-rose-50 border-rose-200 text-rose-700",
                 saveStatus === "saving" &&
-                  "bg-blue-50/90 border-blue-200 text-blue-800",
+                  "bg-slate-50 border-slate-200 text-slate-700",
               )}
             >
-              <div className="flex items-center gap-3">
-                {saveStatus === "saving" && (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                )}
-                {saveStatus === "success" && (
-                  <CheckCircle2 className="w-5 h-5" />
-                )}
-                {saveStatus === "error" && <AlertCircle className="w-5 h-5" />}
-                <span className="text-sm font-semibold">
-                  {saveStatus === "saving" && "Saving changes..."}
-                  {saveStatus === "success" && "Operation successful!"}
-                  {saveStatus === "error" && `Error: ${error}`}
-                </span>
-              </div>
+              {saveStatus === "saving" && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              )}
+              {saveStatus === "success" && (
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+              )}
+              {saveStatus === "error" && (
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              )}
+              <span className="font-medium truncate">
+                {saveStatus === "saving" && "Saving…"}
+                {saveStatus === "success" && "Operation successful"}
+                {saveStatus === "error" && `Error: ${error}`}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {error && (
-          <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 mb-7 flex items-center justify-between backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-rose-600" />
-              <span className="text-sm text-rose-800 font-medium">{error}</span>
+        {error && saveStatus !== "error" && (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-2.5 md:p-3 mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+              <span className="text-[11px] md:text-xs text-rose-700 font-medium truncate">
+                {error}
+              </span>
             </div>
             <button
               onClick={() => setError("")}
-              className="p-1.5 hover:bg-rose-100 rounded-xl transition-colors"
+              className="p-1 hover:bg-rose-100 rounded-lg transition-colors shrink-0"
             >
-              <X className="w-4 h-4 text-rose-600" />
+              <X className="w-3.5 h-3.5 text-rose-600" />
             </button>
           </div>
         )}
 
-        {/* --- STATS (modern cards) --- */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-10">
-          {[
-            {
-              label: "Total",
-              value: staff.length,
-              icon: Users,
-              color: "from-blue-500 to-indigo-600",
-              bg: "bg-blue-50",
-              text: "text-blue-700",
-            },
-            {
-              label: "Owners",
-              value: roleCounts.owner,
-              icon: Crown,
-              color: "from-amber-500 to-orange-600",
-              bg: "bg-amber-50",
-              text: "text-amber-700",
-            },
-            {
-              label: "Doctors",
-              value: roleCounts.doctor,
-              icon: BriefcaseMedical,
-              color: "from-emerald-500 to-teal-600",
-              bg: "bg-emerald-50",
-              text: "text-emerald-700",
-            },
-            {
-              label: "Nurses",
-              value: roleCounts.nurse,
-              icon: Shield,
-              color: "from-purple-500 to-violet-600",
-              bg: "bg-purple-50",
-              text: "text-purple-700",
-            },
-            {
-              label: "Active",
-              value: statusCounts.active,
-              icon: UserCheck,
-              color: "from-green-500 to-emerald-600",
-              bg: "bg-green-50",
-              text: "text-green-700",
-            },
-            {
-              label: "Inactive",
-              value: statusCounts.inactive,
-              icon: UserX,
-              color: "from-slate-400 to-slate-500",
-              bg: "bg-slate-50",
-              text: "text-slate-700",
-            },
-            {
-              label: "On Leave",
-              value: statusCounts.on_leave,
-              icon: Clock,
-              color: "from-amber-400 to-amber-600",
-              bg: "bg-amber-50",
-              text: "text-amber-700",
-            },
-            {
-              label: "Filtered",
-              value: filteredStaff.length,
-              icon: Filter,
-              color: "from-rose-400 to-rose-600",
-              bg: "bg-rose-50",
-              text: "text-rose-700",
-            },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className={cn(
-                "rounded-2xl p-4 border border-slate-200/80 bg-white shadow-sm hover:shadow-md transition-all duration-200 group",
-                "flex flex-col items-start gap-1.5",
-              )}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="text-2xl font-bold text-slate-900 leading-none">
-                  {stat.value}
-                </span>
-                <div
-                  className={cn(
-                    "w-8 h-8 rounded-xl flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity",
-                    stat.bg,
-                  )}
-                >
-                  <stat.icon className={cn("w-4 h-4", stat.text)} />
-                </div>
-              </div>
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                {stat.label}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* --- SEARCH & FILTERS --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-          <div className="relative lg:col-span-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+        {/* ─── Search + Filters ──────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3 mb-3 md:mb-5">
+          {/* Search — spans full width on mobile */}
+          <div className="relative col-span-2 lg:col-span-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search by name, email, role..."
+              placeholder="Search by name, email, role…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-10 py-3.5 bg-white border border-slate-200/80 rounded-2xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all text-sm text-slate-800 placeholder:text-slate-400 shadow-sm"
+              className="w-full pl-9 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all text-xs md:text-sm text-slate-800 placeholder:text-slate-400 shadow-sm outline-none"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded-full transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded-full transition-colors"
               >
-                <X className="w-4 h-4 text-slate-400" />
+                <X className="w-3.5 h-3.5 text-slate-400" />
               </button>
             )}
           </div>
+
+          {/* Role filter */}
           <div className="relative">
-            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200/80 rounded-2xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 appearance-none text-sm text-slate-800 shadow-sm cursor-pointer"
+              className="w-full pl-9 pr-7 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 appearance-none text-xs md:text-sm text-slate-800 shadow-sm cursor-pointer outline-none truncate"
             >
               {roleOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -589,12 +493,14 @@ export default function StaffPanel({
               ))}
             </select>
           </div>
+
+          {/* Status filter */}
           <div className="relative">
-            <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+            <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200/80 rounded-2xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 appearance-none text-sm text-slate-800 shadow-sm cursor-pointer"
+              className="w-full pl-9 pr-7 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 appearance-none text-xs md:text-sm text-slate-800 shadow-sm cursor-pointer outline-none truncate"
             >
               {statusOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -605,174 +511,159 @@ export default function StaffPanel({
           </div>
         </div>
 
-        {/* --- STAFF GRID --- */}
+        {/* ─── Staff grid ────────────────────────────────────── */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-28">
-            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mb-4" />
-            <span className="text-sm text-slate-500 font-medium">
-              Loading staff members...
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mb-3" />
+            <span className="text-xs md:text-sm text-slate-500 font-medium">
+              Loading staff…
             </span>
           </div>
         ) : filteredStaff.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl border border-slate-200/80 p-16 text-center shadow-sm"
+            className="bg-white rounded-2xl border border-slate-200 p-8 md:p-12 text-center"
           >
-            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-5">
-              <Users className="w-10 h-10 text-slate-300" />
+            <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3">
+              <Users className="w-7 h-7 text-slate-300" />
             </div>
             <h3
               className={cn(
-                "text-2xl font-bold text-slate-900 mb-2",
+                "text-base md:text-lg font-bold text-slate-900 mb-1.5",
                 bebasNeue.className,
               )}
             >
               No Staff Members Found
             </h3>
-            <p className="text-sm text-slate-600 max-w-sm mx-auto mb-7">
+            <p className="text-[11px] md:text-xs text-slate-500 max-w-sm mx-auto mb-5">
               {searchTerm || filterRole !== "all" || filterStatus !== "all"
-                ? "No staff match your current search filters. Try adjusting your criteria."
+                ? "No staff match your filters. Try adjusting your criteria."
                 : "Your team is empty. Add your first staff member to get started."}
             </p>
             <button
               onClick={() => setIsAddStaffModalOpen(true)}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-9 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-[0.15em] hover:shadow-xl hover:shadow-emerald-200/50 transition-all shadow-lg shadow-emerald-200/30"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 md:px-6 py-2.5 rounded-xl font-bold text-[11px] md:text-xs uppercase tracking-wide transition-all shadow-sm inline-flex items-center gap-1.5"
             >
+              <UserPlus className="w-3.5 h-3.5" />
               Add Staff Member
             </button>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 md:gap-3">
             {filteredStaff.map((member, index) => {
-              const colors = getStatusColor(member.status);
+              const style = getStatusStyle(member.status);
               const initials = getInitials(member.personalInfo.fullName);
               const isOwner = member.isOwner;
 
               return (
                 <motion.div
                   key={member.id}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.06, duration: 0.35 }}
-                  whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                  className="group bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-xl hover:border-emerald-200/40 transition-all duration-300"
+                  transition={{ delay: index * 0.04 }}
+                  className="bg-white rounded-2xl border border-slate-200 p-3.5 md:p-4 hover:border-emerald-200 hover:shadow-sm transition-all"
                 >
-                  <div className="flex items-start gap-4">
-                    {/* Avatar */}
-                    <div className="relative flex-shrink-0">
+                  {/* Top: avatar + info + status dot */}
+                  <div className="flex items-start gap-3">
+                    <div className="relative shrink-0">
                       <div
                         className={cn(
-                          "w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-sm",
-                          isOwner
-                            ? "bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-200/50"
-                            : "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200/50",
+                          "w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center text-white font-bold text-sm md:text-base",
+                          isOwner ? "bg-amber-500" : "bg-emerald-600",
                         )}
                       >
                         {initials}
                       </div>
                       {isOwner && (
-                        <div className="absolute -top-1.5 -right-1.5 bg-amber-400 text-white rounded-full p-0.5 shadow-md shadow-amber-200/50">
-                          <Crown className="w-3.5 h-3.5" />
+                        <div className="absolute -top-1 -right-1 bg-amber-400 text-white rounded-full p-0.5">
+                          <Crown className="w-3 h-3" />
                         </div>
                       )}
                       <div
                         className={cn(
-                          "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white",
-                          colors.dot,
+                          "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white",
+                          style.dot,
                         )}
                       />
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-semibold text-slate-900 text-[15px] leading-tight truncate">
+                      <div className="flex items-start justify-between gap-2 mb-0.5">
+                        <h3 className="font-bold text-slate-900 text-xs md:text-sm leading-tight truncate">
                           {member.personalInfo.fullName}
                         </h3>
                         {isOwner && (
-                          <span className="text-[8px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                          <span className="text-[8px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 uppercase tracking-wide">
                             Owner
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-slate-600 font-medium">
+                      <p className="text-[11px] md:text-xs text-slate-500 font-medium truncate">
                         {formatRole(member.professional.role)}
                       </p>
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                         <span
                           className={cn(
-                            "text-[10px] px-2.5 py-0.5 rounded-full font-semibold",
-                            colors.bg,
-                            colors.text,
-                            "border",
-                            colors.border,
+                            "text-[9px] md:text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide border",
+                            style.pill,
                           )}
                         >
-                          {member.status === "active"
-                            ? "Active"
-                            : member.status === "inactive"
-                              ? "Inactive"
-                              : "On Leave"}
+                          {style.label}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200/60">
+                        <span className="text-[9px] md:text-[10px] text-slate-500 font-mono bg-slate-50 px-1.5 py-0.5 rounded-full border border-slate-200 truncate max-w-[100px]">
                           {member.staffId}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Contact Details */}
-                  <div className="mt-4 grid grid-cols-2 gap-2 pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 min-w-0">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  {/* Contact details */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+                    <div className="flex items-center gap-2 text-[10px] md:text-[11px] text-slate-600 min-w-0">
+                      <Mail className="w-3 h-3 text-slate-400 shrink-0" />
                       <span className="truncate">
                         {member.personalInfo.email}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                      <Phone className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                      <span>{member.personalInfo.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-600 col-span-2">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                      <span>
-                        Joined{" "}
-                        <span className="font-medium text-slate-700">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-[10px] md:text-[11px] text-slate-600 min-w-0">
+                        <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">
+                          {member.personalInfo.phone}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] md:text-[11px] text-slate-500 shrink-0">
+                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <span className="tabular-nums">
                           {new Date(member.joinedAt).toLocaleDateString(
                             "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            },
+                            { month: "short", day: "numeric" },
                           )}
                         </span>
-                      </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-4 flex gap-2.5 pt-3 border-t border-slate-100">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex gap-2">
+                    <button
                       onClick={() => handleViewIDCard(member)}
-                      className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.12em] hover:shadow-lg hover:shadow-emerald-200/50 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-[10px] md:text-[11px] font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-1.5"
                     >
-                      <IdCard size={14} /> ID Card
-                    </motion.button>
+                      <IdCard className="w-3.5 h-3.5" />
+                      ID Card
+                    </button>
                     {!isOwner && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
+                      <button
                         onClick={() =>
                           handleDeleteStaff(member.id, member.isOwner)
                         }
-                        className="flex-1 border-2 border-rose-200/80 text-rose-600 bg-rose-50/50 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.12em] hover:bg-rose-100 hover:border-rose-300 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 border border-rose-200 text-rose-600 bg-rose-50/50 py-2 rounded-lg text-[10px] md:text-[11px] font-bold uppercase tracking-wide hover:bg-rose-100 hover:border-rose-300 transition-all flex items-center justify-center gap-1.5"
                       >
-                        <Trash2 size={14} /> Remove
-                      </motion.button>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Remove
+                      </button>
                     )}
                   </div>
                 </motion.div>
@@ -780,9 +671,9 @@ export default function StaffPanel({
             })}
           </div>
         )}
-      </motion.div>
+      </div>
 
-      {/* MODALS */}
+      {/* ─── Modals ─────────────────────────────────────────── */}
       <AnimatePresence>
         {isAddStaffModalOpen && (
           <AddStaffModal
@@ -805,6 +696,41 @@ export default function StaffPanel({
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Compact stat pill ──────────────────────────────────────────
+
+function StatPill({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "emerald" | "slate" | "amber";
+}) {
+  const toneClass =
+    tone === "emerald"
+      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+      : tone === "amber"
+        ? "bg-amber-50 border-amber-200 text-amber-700"
+        : "bg-slate-50 border-slate-200 text-slate-600";
+
+  return (
+    <div
+      className={cn(
+        "shrink-0 md:shrink w-auto md:w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border",
+        toneClass,
+      )}
+    >
+      <span className="text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">
+        {label}
+      </span>
+      <span className="text-sm font-bold tabular-nums leading-none">
+        {value}
+      </span>
     </div>
   );
 }

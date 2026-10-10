@@ -32,7 +32,7 @@ import {
   User,
 } from "@/app/center/type";
 
-// ─── Types ─────────────────────────────────────────────────────────── ─
+// ─── Types ───────────────────────────────────────────────────────────
 
 interface Test {
   id: string;
@@ -58,68 +58,28 @@ interface FacilityServicesPanelProps {
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-const formatNaira = (amount: number) => {
-  return `₦${amount.toLocaleString("en-NG")}`;
-};
+const formatNaira = (amount: number) => `₦${amount.toLocaleString("en-NG")}`;
 
-// ─── Skeleton Loaders ──────────────────────────────────────────────
+// ─── Skeletons ──────────────────────────────────────────────────────
 
-const FacilityCardSkeleton = () => (
-  <div className="bg-white rounded-2xl p-4 border border-slate-200/80 animate-pulse shadow-sm">
-    <div className="flex items-start justify-between mb-3">
+const CardSkeleton = () => (
+  <div className="bg-white rounded-xl p-3 border border-slate-200 animate-pulse">
+    <div className="flex items-start justify-between mb-2">
       <div className="flex-1">
-        <div className="h-5 w-32 bg-slate-200 rounded-lg" />
-        <div className="h-4 w-24 bg-slate-100 rounded mt-1" />
+        <div className="h-4 w-28 bg-slate-200 rounded" />
+        <div className="h-3 w-20 bg-slate-100 rounded mt-1.5" />
       </div>
-      <div className="flex space-x-1">
-        <div className="w-8 h-8 bg-slate-200 rounded-lg" />
-        <div className="w-8 h-8 bg-slate-200 rounded-lg" />
+      <div className="flex gap-1">
+        <div className="w-7 h-7 bg-slate-200 rounded-lg" />
+        <div className="w-7 h-7 bg-slate-200 rounded-lg" />
       </div>
     </div>
-    <div className="h-2 w-full bg-slate-200 rounded-full" />
+    <div className="h-1.5 w-full bg-slate-200 rounded-full" />
     <div className="h-3 w-3/4 bg-slate-100 rounded mt-2" />
-    <div className="flex gap-1 mt-3">
-      <div className="h-6 w-16 bg-slate-100 rounded-lg" />
-      <div className="h-6 w-16 bg-slate-100 rounded-lg" />
-    </div>
   </div>
 );
 
-const ServiceCardSkeleton = () => (
-  <div className="bg-white rounded-2xl p-4 border border-slate-200/80 animate-pulse shadow-sm">
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex-1">
-        <div className="h-5 w-28 bg-slate-200 rounded-lg" />
-        <div className="h-4 w-20 bg-slate-100 rounded mt-1" />
-      </div>
-      <div className="flex space-x-1">
-        <div className="w-8 h-8 bg-slate-200 rounded-lg" />
-        <div className="w-8 h-8 bg-slate-200 rounded-lg" />
-      </div>
-    </div>
-    <div className="h-3 w-full bg-slate-100 rounded" />
-    <div className="h-3 w-2/3 bg-slate-100 rounded mt-1" />
-  </div>
-);
-
-const TestCardSkeleton = () => (
-  <div className="bg-white rounded-2xl p-4 border border-slate-200/80 animate-pulse shadow-sm">
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex-1">
-        <div className="h-5 w-28 bg-slate-200 rounded-lg" />
-        <div className="h-4 w-20 bg-slate-100 rounded mt-1" />
-      </div>
-      <div className="flex space-x-1">
-        <div className="w-8 h-8 bg-slate-200 rounded-lg" />
-        <div className="w-8 h-8 bg-slate-200 rounded-lg" />
-      </div>
-    </div>
-    <div className="h-3 w-full bg-slate-100 rounded" />
-    <div className="h-3 w-2/3 bg-slate-100 rounded mt-1" />
-  </div>
-);
-
-// ─── Main Component ──────────────────────────────────────────────
+// ─── Main Component ─────────────────────────────────────────────────
 
 export default function FacilityServicesPanel({
   center,
@@ -189,7 +149,6 @@ export default function FacilityServicesPanel({
     preparationInstructions: "",
   });
 
-  // Sample types for tests
   const sampleTypes = [
     "Blood",
     "Urine",
@@ -200,7 +159,6 @@ export default function FacilityServicesPanel({
     "Other",
   ];
 
-  // Test categories
   const testCategories = [
     "Laboratory",
     "Imaging",
@@ -221,6 +179,7 @@ export default function FacilityServicesPanel({
       );
       loadOperatingHours();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center]);
 
   const getCenterName = () => center.centerName || "Unknown Center";
@@ -235,11 +194,7 @@ export default function FacilityServicesPanel({
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
-      if (result.success && result.data) {
-        setFacilities(result.data);
-      } else {
-        setFacilities([]);
-      }
+      setFacilities(result.success && result.data ? result.data : []);
     } catch (error: any) {
       logger.error("Error loading facilities", error);
       setFacilities([]);
@@ -255,11 +210,7 @@ export default function FacilityServicesPanel({
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
-      if (result.success && result.data) {
-        setServices(result.data);
-      } else {
-        setServices([]);
-      }
+      setServices(result.success && result.data ? result.data : []);
     } catch (error: any) {
       logger.error("Error loading services", error);
       setServices([]);
@@ -274,11 +225,7 @@ export default function FacilityServicesPanel({
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
-      if (result.success && result.data) {
-        setTests(result.data);
-      } else {
-        setTests([]);
-      }
+      setTests(result.success && result.data ? result.data : []);
     } catch (error: any) {
       logger.error("Error loading tests", error);
       setTests([]);
@@ -499,12 +446,7 @@ export default function FacilityServicesPanel({
   // ─── Delete Handlers ─────────────────────────────────────────────
 
   const handleDeleteFacility = async (facilityId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this facility? This action cannot be undone.",
-      )
-    )
-      return;
+    if (!confirm("Delete this facility? This action cannot be undone.")) return;
     setLoading(true);
     try {
       const response = await fetch(
@@ -526,12 +468,7 @@ export default function FacilityServicesPanel({
   };
 
   const handleDeleteService = async (serviceId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this service? This action cannot be undone.",
-      )
-    )
-      return;
+    if (!confirm("Delete this service? This action cannot be undone.")) return;
     setLoading(true);
     try {
       const response = await fetch(
@@ -553,12 +490,7 @@ export default function FacilityServicesPanel({
   };
 
   const handleDeleteTest = async (testId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this test? This action cannot be undone.",
-      )
-    )
-      return;
+    if (!confirm("Delete this test? This action cannot be undone.")) return;
     setLoading(true);
     try {
       const response = await fetch(
@@ -671,45 +603,32 @@ export default function FacilityServicesPanel({
 
   const getSearchResults = () => {
     if (!searchTerm.trim()) {
-      return {
-        facilities,
-        services,
-        tests,
-        hasResults:
-          facilities.length > 0 || services.length > 0 || tests.length > 0,
-      };
+      return { facilities, services, tests };
     }
-    const searchLower = searchTerm.toLowerCase();
-    const filteredFacilities = facilities.filter(
-      (f) =>
-        f.name.toLowerCase().includes(searchLower) ||
-        f.type.toLowerCase().includes(searchLower) ||
-        f.description?.toLowerCase().includes(searchLower) ||
-        f.features.some((feat) => feat.toLowerCase().includes(searchLower)),
-    );
-    const filteredServices = services.filter(
-      (s) =>
-        s.name.toLowerCase().includes(searchLower) ||
-        s.category.toLowerCase().includes(searchLower) ||
-        s.description?.toLowerCase().includes(searchLower) ||
-        s.notes?.toLowerCase().includes(searchLower),
-    );
-    const filteredTests = tests.filter(
-      (t) =>
-        t.name.toLowerCase().includes(searchLower) ||
-        t.category.toLowerCase().includes(searchLower) ||
-        t.description?.toLowerCase().includes(searchLower) ||
-        t.notes?.toLowerCase().includes(searchLower) ||
-        t.sampleType?.toLowerCase().includes(searchLower),
-    );
+    const s = searchTerm.toLowerCase();
     return {
-      facilities: filteredFacilities,
-      services: filteredServices,
-      tests: filteredTests,
-      hasResults:
-        filteredFacilities.length > 0 ||
-        filteredServices.length > 0 ||
-        filteredTests.length > 0,
+      facilities: facilities.filter(
+        (f) =>
+          f.name.toLowerCase().includes(s) ||
+          f.type.toLowerCase().includes(s) ||
+          f.description?.toLowerCase().includes(s) ||
+          f.features.some((feat) => feat.toLowerCase().includes(s)),
+      ),
+      services: services.filter(
+        (sv) =>
+          sv.name.toLowerCase().includes(s) ||
+          sv.category.toLowerCase().includes(s) ||
+          sv.description?.toLowerCase().includes(s) ||
+          sv.notes?.toLowerCase().includes(s),
+      ),
+      tests: tests.filter(
+        (t) =>
+          t.name.toLowerCase().includes(s) ||
+          t.category.toLowerCase().includes(s) ||
+          t.description?.toLowerCase().includes(s) ||
+          t.notes?.toLowerCase().includes(s) ||
+          t.sampleType?.toLowerCase().includes(s),
+      ),
     };
   };
 
@@ -733,7 +652,7 @@ export default function FacilityServicesPanel({
     }));
   };
 
-  // ─── Get Options ─────────────────────────────────────────────────
+  // ─── Options ─────────────────────────────────────────────────────
 
   const getFacilityTypes = (): string[] => {
     switch (center.centerType) {
@@ -833,171 +752,165 @@ export default function FacilityServicesPanel({
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
 
-  // ─── Render ────────────────────────────────────────────────────────
+  // ─── Tab config ──────────────────────────────────────────────────
+
+  const tabs = [
+    {
+      key: "facilities" as const,
+      label: "Facilities",
+      count: facilities.length,
+    },
+    { key: "services" as const, label: "Services", count: services.length },
+    { key: "tests" as const, label: "Tests", count: tests.length },
+    { key: "hours" as const, label: "Hours", count: null },
+  ];
+
+  // ─── Render ──────────────────────────────────────────────────────
 
   return (
-    <div
-      className={cn(
-        "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8",
-        poppins.className,
-      )}
-    >
-      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-6">
-        {/* ─── Header ───────────────────────────────────────────── */}
-        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-5">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-8 w-1 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
-              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.25em]">
-                Facility, Services & Tests
-              </span>
-              <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                {facilities.length + services.length + tests.length} items
-              </span>
-            </div>
-            <h1
-              className={cn(
-                "text-3xl md:text-4xl lg:text-6xl text-slate-900 leading-[1.1] tracking-tight",
-                bebasNeue.className,
-              )}
-            >
-              {getCenterName()}
-            </h1>
-            <p className="text-sm text-slate-600 mt-2 max-w-md">
-              Manage your facilities, services, tests, and operating hours
-            </p>
+    <div className={cn("min-h-screen bg-[#F8FAFC] pb-24", poppins.className)}>
+      <div className="max-w-7xl mx-auto px-3 md:px-6">
+        {/* ─── Header ─────────────────────────────────────────── */}
+        <header className="pt-3 md:pt-6 mb-3 md:mb-6">
+          {/* Row 1: eyebrow + item count */}
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 uppercase tracking-[0.15em] truncate">
+              Facility · Services · Tests
+            </span>
+            <span className="text-[9px] md:text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
+              {facilities.length + services.length + tests.length}
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-            <button
-              onClick={() => setActiveTab("facilities")}
-              className={cn(
-                "px-3 md:px-5 py-2 rounded-xl text-xs md:text-sm font-medium transition-all whitespace-nowrap",
-                activeTab === "facilities"
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200/50"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
-              )}
-            >
-              Facilities ({facilities.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("services")}
-              className={cn(
-                "px-3 md:px-5 py-2 rounded-xl text-xs md:text-sm font-medium transition-all whitespace-nowrap",
-                activeTab === "services"
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200/50"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
-              )}
-            >
-              Services ({services.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("tests")}
-              className={cn(
-                "px-3 md:px-5 py-2 rounded-xl text-xs md:text-sm font-medium transition-all whitespace-nowrap",
-                activeTab === "tests"
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200/50"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
-              )}
-            >
-              Tests ({tests.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("hours")}
-              className={cn(
-                "px-3 md:px-5 py-2 rounded-xl text-xs md:text-sm font-medium transition-all whitespace-nowrap",
-                activeTab === "hours"
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200/50"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
-              )}
-            >
-              Hours
-            </button>
+          {/* Row 2: center name */}
+          <h1
+            className={cn(
+              "text-2xl md:text-4xl text-slate-900 leading-none tracking-tight mb-1",
+              bebasNeue.className,
+            )}
+          >
+            {getCenterName()}
+          </h1>
+          <p className="text-[11px] md:text-xs text-slate-500">
+            Manage your facilities, services, tests, and operating hours
+          </p>
+
+          {/* Row 3: tab pills — horizontal scroll on mobile */}
+          <div className="-mx-3 px-3 md:mx-0 md:px-0 mt-3 md:mt-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={cn(
+                    "shrink-0 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap",
+                    isActive
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
+                  )}
+                >
+                  {tab.label}
+                  {tab.count !== null && (
+                    <span
+                      className={cn(
+                        "ml-1.5 text-[9px] md:text-[10px] font-semibold",
+                        isActive ? "text-emerald-100" : "text-slate-400",
+                      )}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </header>
 
-        {/* ─── Save Status ─────────────────────────────────────── */}
+        {/* ─── Save Status ───────────────────────────────────── */}
         <AnimatePresence>
           {saveStatus !== "idle" && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: -8 }}
               className={cn(
-                "rounded-xl p-3 border shadow-sm",
+                "rounded-xl p-2.5 md:p-3 border mb-3 flex items-center gap-2 text-[11px] md:text-xs",
                 saveStatus === "success" &&
-                  "bg-emerald-50 border-emerald-200 text-emerald-800",
+                  "bg-emerald-50 border-emerald-200 text-emerald-700",
                 saveStatus === "error" &&
-                  "bg-rose-50 border-rose-200 text-rose-800",
+                  "bg-rose-50 border-rose-200 text-rose-700",
                 saveStatus === "saving" &&
-                  "bg-blue-50 border-blue-200 text-blue-800",
+                  "bg-slate-50 border-slate-200 text-slate-700",
               )}
             >
-              <div className="flex items-center gap-2">
-                {saveStatus === "saving" && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                )}
-                {saveStatus === "success" && (
-                  <CheckCircle2 className="w-4 h-4" />
-                )}
-                {saveStatus === "error" && <AlertCircle className="w-4 h-4" />}
-                <span className="text-sm font-medium">
-                  {saveStatus === "saving" && "Saving changes..."}
-                  {saveStatus === "success" && "Changes saved successfully!"}
-                  {saveStatus === "error" && `Error: ${error}`}
-                </span>
-              </div>
+              {saveStatus === "saving" && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              )}
+              {saveStatus === "success" && (
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+              )}
+              {saveStatus === "error" && (
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              )}
+              <span className="font-medium truncate">
+                {saveStatus === "saving" && "Saving changes…"}
+                {saveStatus === "success" && "Changes saved"}
+                {saveStatus === "error" && `Error: ${error}`}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ─── Search ───────────────────────────────────────────── */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 pointer-events-none" />
+        {/* ─── Search ────────────────────────────────────────── */}
+        <div className="relative mb-3 md:mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search facilities, services, tests..."
+            placeholder="Search facilities, services, tests…"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200/80 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400 transition-all shadow-sm"
+            className="w-full pl-9 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs md:text-sm text-slate-800 placeholder:text-slate-400 transition-all shadow-sm"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-lg transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-lg transition-colors"
             >
-              <X className="w-4 h-4 text-slate-400" />
+              <X className="w-3.5 h-3.5 text-slate-400" />
             </button>
           )}
         </div>
 
-        {/* ─── Content ───────────────────────────────────────────── */}
+        {/* ─── Content ───────────────────────────────────────── */}
         <AnimatePresence mode="wait">
           {activeTab === "facilities" && (
             <motion.div
               key="facilities"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3"
             >
               <button
                 onClick={() => setShowFacilityForm(true)}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-3.5 rounded-xl font-bold text-sm hover:shadow-xl hover:shadow-emerald-200/50 transition-all disabled:opacity-50 active:scale-95"
+                className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 md:py-3 rounded-xl font-bold text-[11px] md:text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Add Facility
               </button>
 
               {isInitialLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 md:gap-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <FacilityCardSkeleton key={i} />
+                    <CardSkeleton key={i} />
                   ))}
                 </div>
               ) : searchResults.facilities.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 md:gap-3">
                   {searchResults.facilities.map((facility) => (
                     <FacilityCard
                       key={facility.id}
@@ -1029,28 +942,29 @@ export default function FacilityServicesPanel({
           {activeTab === "services" && (
             <motion.div
               key="services"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3"
             >
               <button
                 onClick={() => setShowServiceForm(true)}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-3.5 rounded-xl font-bold text-sm hover:shadow-xl hover:shadow-emerald-200/50 transition-all disabled:opacity-50 active:scale-95"
+                className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 md:py-3 rounded-xl font-bold text-[11px] md:text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Add Service
               </button>
 
               {isInitialLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 md:gap-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <ServiceCardSkeleton key={i} />
+                    <CardSkeleton key={i} />
                   ))}
                 </div>
               ) : searchResults.services.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 md:gap-3">
                   {searchResults.services.map((service) => (
                     <ServiceCard
                       key={service.id}
@@ -1082,28 +996,29 @@ export default function FacilityServicesPanel({
           {activeTab === "tests" && (
             <motion.div
               key="tests"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3"
             >
               <button
                 onClick={() => setShowTestForm(true)}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-3.5 rounded-xl font-bold text-sm hover:shadow-xl hover:shadow-emerald-200/50 transition-all disabled:opacity-50 active:scale-95"
+                className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 md:py-3 rounded-xl font-bold text-[11px] md:text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Add Test
               </button>
 
               {isInitialLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 md:gap-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <TestCardSkeleton key={i} />
+                    <CardSkeleton key={i} />
                   ))}
                 </div>
               ) : searchResults.tests.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 md:gap-3">
                   {searchResults.tests.map((test) => (
                     <TestCard
                       key={test.id}
@@ -1132,29 +1047,25 @@ export default function FacilityServicesPanel({
           {activeTab === "hours" && (
             <motion.div
               key="hours"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3 md:space-y-4"
             >
-              <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/80">
+              <div className="bg-white rounded-2xl p-3.5 md:p-5 border border-slate-200 shadow-sm">
                 <h2
                   className={cn(
-                    "text-xl font-bold text-slate-800 mb-4",
+                    "text-sm md:text-base font-bold text-slate-900 mb-3",
                     bebasNeue.className,
                   )}
                 >
                   Operating Hours
                 </h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label
-                        className={cn(
-                          "block text-xs font-medium text-slate-600 mb-1",
-                          poppins.className,
-                        )}
-                      >
+                      <label className="block text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">
                         Opening
                       </label>
                       <input
@@ -1166,16 +1077,11 @@ export default function FacilityServicesPanel({
                             opening: e.target.value,
                           }))
                         }
-                        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs md:text-sm text-slate-800"
                       />
                     </div>
                     <div>
-                      <label
-                        className={cn(
-                          "block text-xs font-medium text-slate-600 mb-1",
-                          poppins.className,
-                        )}
-                      >
+                      <label className="block text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">
                         Closing
                       </label>
                       <input
@@ -1187,18 +1093,13 @@ export default function FacilityServicesPanel({
                             closing: e.target.value,
                           }))
                         }
-                        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs md:text-sm text-slate-800"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label
-                      className={cn(
-                        "block text-xs font-medium text-slate-600 mb-2",
-                        poppins.className,
-                      )}
-                    >
+                    <label className="block text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">
                       Operating Days
                     </label>
                     <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
@@ -1223,10 +1124,10 @@ export default function FacilityServicesPanel({
                             <label
                               key={shortDay}
                               className={cn(
-                                "flex flex-col items-center p-2 rounded-lg border transition-all cursor-pointer",
+                                "flex items-center justify-center p-1.5 rounded-lg border transition-all cursor-pointer text-[11px] md:text-xs font-semibold",
                                 checked
-                                  ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                                  : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100",
+                                  ? "bg-emerald-600 border-emerald-600 text-white"
+                                  : "bg-white border-slate-200 text-slate-500 hover:border-slate-300",
                               )}
                             >
                               <input
@@ -1249,9 +1150,7 @@ export default function FacilityServicesPanel({
                                 }}
                                 className="sr-only"
                               />
-                              <span className="text-xs font-medium">
-                                {shortDay}
-                              </span>
+                              {shortDay}
                             </label>
                           );
                         },
@@ -1260,12 +1159,7 @@ export default function FacilityServicesPanel({
                   </div>
 
                   <div>
-                    <label
-                      className={cn(
-                        "block text-xs font-medium text-slate-600 mb-1",
-                        poppins.className,
-                      )}
-                    >
+                    <label className="block text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">
                       Timezone
                     </label>
                     <select
@@ -1276,7 +1170,7 @@ export default function FacilityServicesPanel({
                           timezone: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs md:text-sm text-slate-800"
                     >
                       <option value="WAT">West Africa Time (WAT)</option>
                       <option value="GMT">Greenwich Mean Time (GMT)</option>
@@ -1286,10 +1180,10 @@ export default function FacilityServicesPanel({
                   <button
                     onClick={handleSaveOperatingHours}
                     disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold hover:shadow-xl hover:shadow-emerald-200/50 transition-all disabled:opacity-50 active:scale-95"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] md:text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
                   >
                     {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       "Save Hours"
                     )}
@@ -1297,24 +1191,24 @@ export default function FacilityServicesPanel({
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/80">
+              <div className="bg-white rounded-2xl p-3.5 md:p-5 border border-slate-200 shadow-sm">
                 <h3
                   className={cn(
-                    "text-base font-bold text-slate-800 mb-3",
+                    "text-sm md:text-base font-bold text-slate-900 mb-2.5",
                     bebasNeue.className,
                   )}
                 >
                   Location
                 </h3>
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-slate-700 leading-relaxed">
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-slate-700 leading-relaxed">
                       {center.location?.address || "Address not available"}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Shield className="w-4 h-4 text-emerald-500" />
-                      <span className="text-xs text-emerald-600 font-medium">
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <Shield className="w-3 h-3 text-emerald-500" />
+                      <span className="text-[10px] md:text-[11px] text-emerald-700 font-semibold">
                         Verified Location
                       </span>
                     </div>
@@ -1412,7 +1306,7 @@ export default function FacilityServicesPanel({
   );
 }
 
-// ─── Card Components ────────────────────────────────────────────────
+// ─── Cards ──────────────────────────────────────────────────────────
 
 const FacilityCard = ({
   facility,
@@ -1420,62 +1314,66 @@ const FacilityCard = ({
   onDelete,
   loading,
   formatFacilityType,
-  formatNaira,
 }: any) => (
   <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
+    initial={{ opacity: 0, scale: 0.98 }}
     animate={{ opacity: 1, scale: 1 }}
-    className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 hover:shadow-lg hover:border-emerald-200/60 transition-all group"
+    className="bg-white rounded-xl p-3 border border-slate-200 hover:border-emerald-200 hover:shadow-md transition-all group"
   >
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex-1 min-w-0 pr-2">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <h3 className="text-sm md:text-base font-bold text-slate-800 truncate">
+    <div className="flex items-start justify-between gap-2 mb-2.5">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">
             {facility.name}
           </h3>
-          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] md:text-xs font-medium rounded-full whitespace-nowrap">
+          <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold uppercase tracking-wide rounded-full whitespace-nowrap">
             {formatFacilityType(facility.type)}
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500">
           <span className="flex items-center gap-1">
             <Bed className="w-3 h-3" />
-            {facility.available}/{facility.capacity}
+            <span className="tabular-nums">
+              {facility.available}/{facility.capacity}
+            </span>
           </span>
-          <span className="flex items-center gap-1">
-            <span className="font-medium">₦</span>
-            {facility.costPerDay.toLocaleString()}/day
+          <span className="tabular-nums">
+            ₦{facility.costPerDay.toLocaleString()}/day
           </span>
         </div>
       </div>
-      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+      <div className="flex gap-0.5 shrink-0">
         <button
           onClick={onEdit}
           disabled={loading}
-          className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition"
+          className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+          aria-label="Edit"
         >
-          <Edit3 className="w-4 h-4" />
+          <Edit3 className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={onDelete}
           disabled={loading}
-          className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition"
+          className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+          aria-label="Delete"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
-    <div className="mb-3">
-      <div className="flex justify-between text-xs text-slate-600 mb-1">
+
+    <div className="mb-2">
+      <div className="flex justify-between text-[10px] text-slate-500 mb-1">
         <span>Availability</span>
-        <span>
+        <span className="tabular-nums">
           {Math.round((facility.available / facility.capacity) * 100)}%
         </span>
       </div>
-      <div className="w-full bg-slate-200 rounded-full h-2">
+      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
         <div
           className={cn(
-            "h-2 rounded-full transition-all",
+            "h-full rounded-full transition-all",
             facility.available === 0
               ? "bg-rose-500"
               : facility.available / facility.capacity < 0.2
@@ -1488,23 +1386,25 @@ const FacilityCard = ({
         />
       </div>
     </div>
+
     {facility.description && (
-      <p className="text-xs text-slate-600 leading-relaxed mb-3 line-clamp-2">
+      <p className="text-[11px] text-slate-500 leading-relaxed mb-2 line-clamp-2">
         {facility.description}
       </p>
     )}
+
     {facility.features.length > 0 && (
       <div className="flex flex-wrap gap-1">
         {facility.features.slice(0, 3).map((feature: string, idx: number) => (
           <span
             key={idx}
-            className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] md:text-xs font-medium rounded-full border border-blue-200"
+            className="px-1.5 py-0.5 bg-slate-50 text-slate-600 border border-slate-200 text-[9px] font-semibold rounded-full"
           >
             {feature}
           </span>
         ))}
         {facility.features.length > 3 && (
-          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] md:text-xs font-medium rounded-full">
+          <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-semibold rounded-full">
             +{facility.features.length - 3}
           </span>
         )}
@@ -1519,152 +1419,168 @@ const ServiceCard = ({
   onDelete,
   loading,
   formatFacilityType,
-  formatNaira,
 }: any) => (
   <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
+    initial={{ opacity: 0, scale: 0.98 }}
     animate={{ opacity: 1, scale: 1 }}
-    className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 hover:shadow-lg hover:border-emerald-200/60 transition-all group"
+    className="bg-white rounded-xl p-3 border border-slate-200 hover:border-emerald-200 hover:shadow-md transition-all group"
   >
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex-1 min-w-0 pr-2">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <h3 className="text-sm md:text-base font-bold text-slate-800 truncate">
+    <div className="flex items-start justify-between gap-2 mb-2.5">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">
             {service.name}
           </h3>
-          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] md:text-xs font-medium rounded-full whitespace-nowrap">
+          <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold uppercase tracking-wide rounded-full whitespace-nowrap">
             {formatFacilityType(service.category)}
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-          <span className="flex items-center gap-1">
-            <span className="font-medium">₦</span>
-            {service.price.toLocaleString()}
+        <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500">
+          <span className="tabular-nums font-semibold text-slate-700">
+            ₦{service.price.toLocaleString()}
           </span>
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            {service.duration} mins
+            <span className="tabular-nums">{service.duration}m</span>
           </span>
         </div>
       </div>
-      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+      <div className="flex gap-0.5 shrink-0">
         <button
           onClick={onEdit}
           disabled={loading}
-          className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition"
+          className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+          aria-label="Edit"
         >
-          <Edit3 className="w-4 h-4" />
+          <Edit3 className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={onDelete}
           disabled={loading}
-          className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition"
+          className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+          aria-label="Delete"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
+
     {service.description && (
-      <p className="text-xs text-slate-600 leading-relaxed mb-3 line-clamp-2">
+      <p className="text-[11px] text-slate-500 leading-relaxed mb-2 line-clamp-2">
         {service.description}
       </p>
     )}
+
     {service.notes && (
-      <div className="p-2 bg-amber-50 rounded-xl border border-amber-200">
-        <p className="text-xs text-amber-800 leading-relaxed line-clamp-2">
-          <strong>Note:</strong> {service.notes}
+      <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+        <p className="text-[10px] text-slate-600 leading-relaxed line-clamp-2">
+          <strong className="text-slate-700">Note:</strong> {service.notes}
         </p>
       </div>
     )}
   </motion.div>
 );
 
-const TestCard = ({ test, onEdit, onDelete, loading, formatNaira }: any) => (
+const TestCard = ({ test, onEdit, onDelete, loading }: any) => (
   <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
+    initial={{ opacity: 0, scale: 0.98 }}
     animate={{ opacity: 1, scale: 1 }}
-    className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 hover:shadow-lg hover:border-emerald-200/60 transition-all group"
+    className="bg-white rounded-xl p-3 border border-slate-200 hover:border-emerald-200 hover:shadow-md transition-all group"
   >
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex-1 min-w-0 pr-2">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <h3 className="text-sm md:text-base font-bold text-slate-800 truncate">
+    <div className="flex items-start justify-between gap-2 mb-2.5">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">
             {test.name}
           </h3>
-          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] md:text-xs font-medium rounded-full whitespace-nowrap">
+          <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold uppercase tracking-wide rounded-full whitespace-nowrap">
             {test.category}
           </span>
           {test.sampleType && (
-            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] md:text-xs font-medium rounded-full border border-blue-200 whitespace-nowrap">
+            <span className="px-1.5 py-0.5 bg-slate-50 text-slate-600 border border-slate-200 text-[9px] font-semibold rounded-full whitespace-nowrap">
               {test.sampleType}
             </span>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-          <span className="flex items-center gap-1">
-            <span className="font-medium">₦</span>
-            {test.price.toLocaleString()}
+        <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500">
+          <span className="tabular-nums font-semibold text-slate-700">
+            ₦{test.price.toLocaleString()}
           </span>
           {test.duration && (
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {test.duration} mins
+              <span className="tabular-nums">{test.duration}m</span>
             </span>
           )}
         </div>
       </div>
-      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+      <div className="flex gap-0.5 shrink-0">
         <button
           onClick={onEdit}
           disabled={loading}
-          className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition"
+          className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+          aria-label="Edit"
         >
-          <Edit3 className="w-4 h-4" />
+          <Edit3 className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={onDelete}
           disabled={loading}
-          className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition"
+          className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+          aria-label="Delete"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
+
     {test.description && (
-      <p className="text-xs text-slate-600 leading-relaxed mb-3 line-clamp-2">
+      <p className="text-[11px] text-slate-500 leading-relaxed mb-2 line-clamp-2">
         {test.description}
       </p>
     )}
+
     {test.preparationInstructions && (
-      <div className="p-2 bg-amber-50 rounded-xl border border-amber-200">
-        <p className="text-xs text-amber-800 leading-relaxed line-clamp-2">
-          <strong>Preparation:</strong> {test.preparationInstructions}
+      <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg mb-1.5">
+        <p className="text-[10px] text-slate-600 leading-relaxed line-clamp-2">
+          <strong className="text-slate-700">Prep:</strong>{" "}
+          {test.preparationInstructions}
         </p>
       </div>
     )}
+
     {test.notes && (
-      <div className="mt-1 p-2 bg-slate-50 rounded-xl border border-slate-200">
-        <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
-          <strong>Note:</strong> {test.notes}
+      <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+        <p className="text-[10px] text-slate-600 leading-relaxed line-clamp-2">
+          <strong className="text-slate-700">Note:</strong> {test.notes}
         </p>
       </div>
     )}
   </motion.div>
 );
 
-// ─── Empty State ─────────────────────────────────────────────────────
+// ─── Empty State ────────────────────────────────────────────────────
 
 const EmptyState = ({ icon: Icon, title, message }: any) => (
-  <div className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-slate-300/60">
-    <Icon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-    <h3 className={cn("text-lg font-bold text-slate-800", bebasNeue.className)}>
+  <div className="text-center py-10 md:py-12 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-2.5">
+      <Icon className="w-6 h-6 text-slate-400" />
+    </div>
+    <h3
+      className={cn(
+        "text-sm md:text-base font-bold text-slate-800",
+        bebasNeue.className,
+      )}
+    >
       {title}
     </h3>
-    <p className="text-sm text-slate-500 mt-1">{message}</p>
+    <p className="text-[11px] md:text-xs text-slate-500 mt-1 px-4">{message}</p>
   </div>
 );
 
-// ─── Modal ───────────────────────────────────────────────────────────
+// ─── Modal ──────────────────────────────────────────────────────────
 
 interface ModalProps {
   title: string;
@@ -1684,17 +1600,27 @@ const Modal = ({
   children,
 }: ModalProps) => (
   <div
-    className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+    className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
     onClick={onClose}
   >
-    <div
-      className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200/80"
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 28, stiffness: 240 }}
+      className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="sticky top-0 bg-white/90 backdrop-blur-sm border-b border-slate-200/80 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between rounded-t-2xl">
+      {/* Handle bar for mobile */}
+      <div className="sm:hidden pt-2 pb-1 flex justify-center">
+        <div className="w-10 h-1 bg-slate-200 rounded-full" />
+      </div>
+
+      {/* Header */}
+      <div className="border-b border-slate-100 px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between">
         <h2
           className={cn(
-            "text-lg sm:text-xl font-bold text-slate-800",
+            "text-base sm:text-lg font-bold text-slate-900",
             bebasNeue.className,
           )}
         >
@@ -1702,33 +1628,54 @@ const Modal = ({
         </h2>
         <button
           onClick={onClose}
-          className="p-2 -m-1 hover:bg-slate-100 rounded-xl transition-colors"
+          className="p-1.5 -m-1 hover:bg-slate-100 rounded-lg transition-colors"
+          aria-label="Close"
         >
-          <X className="w-5 h-5 text-slate-500" />
+          <X className="w-4 h-4 text-slate-500" />
         </button>
       </div>
-      <div className="p-4 sm:p-6">{children}</div>
-      <div className="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-slate-200/80 px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col sm:flex-row gap-2 sm:gap-3 rounded-b-2xl">
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5">{children}</div>
+
+      {/* Footer */}
+      <div className="border-t border-slate-100 px-4 sm:px-5 py-3 sm:py-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
         <button
           onClick={onClose}
-          className="w-full sm:flex-1 px-4 py-2.5 text-slate-700 hover:bg-slate-100 rounded-xl transition font-medium order-2 sm:order-1"
+          className="w-full sm:flex-1 px-4 py-2.5 text-slate-700 hover:bg-slate-100 rounded-xl transition text-xs sm:text-sm font-bold border border-slate-200"
         >
           Cancel
         </button>
         <button
           onClick={onSave}
           disabled={disabled}
-          className="w-full sm:flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-emerald-200/50 transition disabled:opacity-50 flex items-center justify-center gap-2 order-1 sm:order-2"
+          className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
         >
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          {loading ? "Saving..." : "Save"}
+          {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          {loading ? "Saving…" : "Save"}
         </button>
       </div>
-    </div>
+    </motion.div>
   </div>
 );
 
-// ─── Form Content Components ──────────────────────────────────────
+// ─── Form Content ───────────────────────────────────────────────────
+
+const FieldLabel = ({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) => (
+  <label className="block text-[10px] md:text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">
+    {children}
+    {required && <span className="text-rose-500 ml-0.5">*</span>}
+  </label>
+);
+
+const inputClass =
+  "w-full px-3 py-2 md:py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs md:text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all";
 
 const FacilityFormContent = ({
   form,
@@ -1738,35 +1685,22 @@ const FacilityFormContent = ({
   updateFeature,
   removeFeature,
 }: any) => (
-  <div className="space-y-4">
+  <div className="space-y-3 md:space-y-4">
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Facility Name *
-      </label>
+      <FieldLabel required>Facility Name</FieldLabel>
       <input
         type="text"
         value={form.name}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, name: e.target.value }))
         }
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
+        className={inputClass}
         placeholder="e.g., General Ward"
       />
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Facility Type *
-      </label>
+      <FieldLabel required>Facility Type</FieldLabel>
       <select
         value={form.type}
         onChange={(e) =>
@@ -1776,7 +1710,7 @@ const FacilityFormContent = ({
             customType: e.target.value === "custom" ? prev.customType : "",
           }))
         }
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 mb-2"
+        className={cn(inputClass, "mb-2")}
       >
         <option value="">Select Type</option>
         {getFacilityTypes().map((type: string) => (
@@ -1784,7 +1718,7 @@ const FacilityFormContent = ({
             {type}
           </option>
         ))}
-        <option value="custom">Custom Type...</option>
+        <option value="custom">Custom Type…</option>
       </select>
       {form.type === "custom" && (
         <input
@@ -1793,21 +1727,15 @@ const FacilityFormContent = ({
           onChange={(e) =>
             setForm((prev: any) => ({ ...prev, customType: e.target.value }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-          placeholder="Enter custom facility type..."
+          className={inputClass}
+          placeholder="Enter custom facility type"
         />
       )}
     </div>
-    <div className="grid grid-cols-2 gap-3">
+
+    <div className="grid grid-cols-2 gap-2.5">
       <div>
-        <label
-          className={cn(
-            "block text-sm font-medium text-slate-700 mb-1",
-            poppins.className,
-          )}
-        >
-          Capacity *
-        </label>
+        <FieldLabel required>Capacity</FieldLabel>
         <input
           type="number"
           value={form.capacity}
@@ -1817,19 +1745,12 @@ const FacilityFormContent = ({
               capacity: parseInt(e.target.value) || 0,
             }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+          className={inputClass}
           min="1"
         />
       </div>
       <div>
-        <label
-          className={cn(
-            "block text-sm font-medium text-slate-700 mb-1",
-            poppins.className,
-          )}
-        >
-          Available *
-        </label>
+        <FieldLabel required>Available</FieldLabel>
         <input
           type="number"
           value={form.available}
@@ -1839,21 +1760,15 @@ const FacilityFormContent = ({
               available: parseInt(e.target.value) || 0,
             }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+          className={inputClass}
           min="0"
           max={form.capacity}
         />
       </div>
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Cost Per Day (₦) *
-      </label>
+      <FieldLabel required>Cost Per Day (₦)</FieldLabel>
       <input
         type="number"
         value={form.costPerDay}
@@ -1863,63 +1778,52 @@ const FacilityFormContent = ({
             costPerDay: parseInt(e.target.value) || 0,
           }))
         }
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+        className={inputClass}
         min="0"
       />
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Description
-      </label>
+      <FieldLabel>Description</FieldLabel>
       <textarea
         value={form.description}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, description: e.target.value }))
         }
         rows={2}
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-        placeholder="Describe this facility..."
+        className={inputClass}
+        placeholder="Describe this facility…"
       />
     </div>
+
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <label
-          className={cn(
-            "text-sm font-medium text-slate-700",
-            poppins.className,
-          )}
-        >
-          Features
-        </label>
+      <div className="flex items-center justify-between mb-1.5">
+        <FieldLabel>Features</FieldLabel>
         <button
           type="button"
           onClick={addFeature}
-          className="text-emerald-600 hover:text-emerald-700 text-xs font-semibold flex items-center gap-1"
+          className="text-emerald-600 hover:text-emerald-700 text-[10px] md:text-xs font-bold flex items-center gap-1"
         >
           <Plus className="w-3 h-3" /> Add
         </button>
       </div>
       {form.features.map((feature: string, index: number) => (
-        <div key={index} className="flex gap-2 mb-2">
+        <div key={index} className="flex gap-1.5 mb-1.5">
           <input
             type="text"
             value={feature}
             onChange={(e) => updateFeature(index, e.target.value)}
-            className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
+            className={inputClass}
             placeholder="e.g., AC, TV"
           />
           {form.features.length > 1 && (
             <button
               type="button"
               onClick={() => removeFeature(index)}
-              className="px-3 py-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition"
+              className="px-2.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+              aria-label="Remove feature"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -1929,35 +1833,22 @@ const FacilityFormContent = ({
 );
 
 const ServiceFormContent = ({ form, setForm, getServiceCategories }: any) => (
-  <div className="space-y-4">
+  <div className="space-y-3 md:space-y-4">
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Service Name *
-      </label>
+      <FieldLabel required>Service Name</FieldLabel>
       <input
         type="text"
         value={form.name}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, name: e.target.value }))
         }
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
+        className={inputClass}
         placeholder="e.g., General Consultation"
       />
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Category *
-      </label>
+      <FieldLabel required>Category</FieldLabel>
       <select
         value={form.category}
         onChange={(e) =>
@@ -1968,7 +1859,7 @@ const ServiceFormContent = ({ form, setForm, getServiceCategories }: any) => (
               e.target.value === "custom" ? prev.customCategory : "",
           }))
         }
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 mb-2"
+        className={cn(inputClass, "mb-2")}
       >
         <option value="">Select Category</option>
         {getServiceCategories().map((category: string) => (
@@ -1976,7 +1867,7 @@ const ServiceFormContent = ({ form, setForm, getServiceCategories }: any) => (
             {category}
           </option>
         ))}
-        <option value="custom">Custom Category...</option>
+        <option value="custom">Custom Category…</option>
       </select>
       {form.category === "custom" && (
         <input
@@ -1988,21 +1879,15 @@ const ServiceFormContent = ({ form, setForm, getServiceCategories }: any) => (
               customCategory: e.target.value,
             }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-          placeholder="Enter custom service category..."
+          className={inputClass}
+          placeholder="Enter custom service category"
         />
       )}
     </div>
-    <div className="grid grid-cols-2 gap-3">
+
+    <div className="grid grid-cols-2 gap-2.5">
       <div>
-        <label
-          className={cn(
-            "block text-sm font-medium text-slate-700 mb-1",
-            poppins.className,
-          )}
-        >
-          Price (₦) *
-        </label>
+        <FieldLabel required>Price (₦)</FieldLabel>
         <input
           type="number"
           value={form.price}
@@ -2012,19 +1897,12 @@ const ServiceFormContent = ({ form, setForm, getServiceCategories }: any) => (
               price: parseInt(e.target.value) || 0,
             }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+          className={inputClass}
           min="0"
         />
       </div>
       <div>
-        <label
-          className={cn(
-            "block text-sm font-medium text-slate-700 mb-1",
-            poppins.className,
-          )}
-        >
-          Duration (mins) *
-        </label>
+        <FieldLabel required>Duration (min)</FieldLabel>
         <input
           type="number"
           value={form.duration}
@@ -2034,47 +1912,35 @@ const ServiceFormContent = ({ form, setForm, getServiceCategories }: any) => (
               duration: parseInt(e.target.value) || 30,
             }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+          className={inputClass}
           min="1"
         />
       </div>
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Description
-      </label>
+      <FieldLabel>Description</FieldLabel>
       <textarea
         value={form.description}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, description: e.target.value }))
         }
         rows={2}
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-        placeholder="Describe this service..."
+        className={inputClass}
+        placeholder="Describe this service…"
       />
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Additional Notes
-      </label>
+      <FieldLabel>Additional Notes</FieldLabel>
       <textarea
         value={form.notes}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, notes: e.target.value }))
         }
         rows={2}
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-        placeholder="Any special instructions..."
+        className={inputClass}
+        placeholder="Any special instructions…"
       />
     </div>
   </div>
@@ -2086,35 +1952,22 @@ const TestFormContent = ({
   testCategories,
   sampleTypes,
 }: any) => (
-  <div className="space-y-4">
+  <div className="space-y-3 md:space-y-4">
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Test Name *
-      </label>
+      <FieldLabel required>Test Name</FieldLabel>
       <input
         type="text"
         value={form.name}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, name: e.target.value }))
         }
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
+        className={inputClass}
         placeholder="e.g., Complete Blood Count"
       />
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Category *
-      </label>
+      <FieldLabel required>Category</FieldLabel>
       <select
         value={form.category}
         onChange={(e) =>
@@ -2125,7 +1978,7 @@ const TestFormContent = ({
               e.target.value === "custom" ? prev.customCategory : "",
           }))
         }
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 mb-2"
+        className={cn(inputClass, "mb-2")}
       >
         <option value="">Select Category</option>
         {testCategories.map((category: string) => (
@@ -2133,7 +1986,7 @@ const TestFormContent = ({
             {category}
           </option>
         ))}
-        <option value="custom">Custom Category...</option>
+        <option value="custom">Custom Category…</option>
       </select>
       {form.category === "custom" && (
         <input
@@ -2145,21 +1998,15 @@ const TestFormContent = ({
               customCategory: e.target.value,
             }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-          placeholder="Enter custom category..."
+          className={inputClass}
+          placeholder="Enter custom category"
         />
       )}
     </div>
-    <div className="grid grid-cols-2 gap-3">
+
+    <div className="grid grid-cols-2 gap-2.5">
       <div>
-        <label
-          className={cn(
-            "block text-sm font-medium text-slate-700 mb-1",
-            poppins.className,
-          )}
-        >
-          Price (₦) *
-        </label>
+        <FieldLabel required>Price (₦)</FieldLabel>
         <input
           type="number"
           value={form.price}
@@ -2169,19 +2016,12 @@ const TestFormContent = ({
               price: parseInt(e.target.value) || 0,
             }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+          className={inputClass}
           min="0"
         />
       </div>
       <div>
-        <label
-          className={cn(
-            "block text-sm font-medium text-slate-700 mb-1",
-            poppins.className,
-          )}
-        >
-          Duration (mins)
-        </label>
+        <FieldLabel>Duration (min)</FieldLabel>
         <input
           type="number"
           value={form.duration}
@@ -2191,26 +2031,20 @@ const TestFormContent = ({
               duration: parseInt(e.target.value) || 30,
             }))
           }
-          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800"
+          className={inputClass}
           min="1"
         />
       </div>
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Sample Type
-      </label>
+      <FieldLabel>Sample Type</FieldLabel>
       <select
         value={form.sampleType}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, sampleType: e.target.value }))
         }
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 mb-2"
+        className={inputClass}
       >
         <option value="">Select Sample Type</option>
         {sampleTypes.map((type: string) => (
@@ -2220,34 +2054,22 @@ const TestFormContent = ({
         ))}
       </select>
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Description
-      </label>
+      <FieldLabel>Description</FieldLabel>
       <textarea
         value={form.description}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, description: e.target.value }))
         }
         rows={2}
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-        placeholder="Describe this test..."
+        className={inputClass}
+        placeholder="Describe this test…"
       />
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Preparation Instructions
-      </label>
+      <FieldLabel>Preparation Instructions</FieldLabel>
       <textarea
         value={form.preparationInstructions}
         onChange={(e) =>
@@ -2257,27 +2079,21 @@ const TestFormContent = ({
           }))
         }
         rows={2}
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-        placeholder="e.g., Fasting for 8 hours..."
+        className={inputClass}
+        placeholder="e.g., Fasting for 8 hours…"
       />
     </div>
+
     <div>
-      <label
-        className={cn(
-          "block text-sm font-medium text-slate-700 mb-1",
-          poppins.className,
-        )}
-      >
-        Additional Notes
-      </label>
+      <FieldLabel>Additional Notes</FieldLabel>
       <textarea
         value={form.notes}
         onChange={(e) =>
           setForm((prev: any) => ({ ...prev, notes: e.target.value }))
         }
         rows={2}
-        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400"
-        placeholder="Any special instructions..."
+        className={inputClass}
+        placeholder="Any special instructions…"
       />
     </div>
   </div>

@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
 import {
   Search,
   HelpCircle,
@@ -32,6 +31,7 @@ import { bebasNeue, poppins } from "@/app/utils/constants";
 interface Section {
   id: string;
   label: string;
+  shortLabel: string;
   icon: any;
 }
 
@@ -47,19 +47,49 @@ interface ContactItem {
   description: string;
   icon: any;
   action: () => void;
-  color: string;
+  tone: "emerald" | "slate" | "rose";
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────
 
 const sections: Section[] = [
-  { id: "getting-started", label: "Getting Started", icon: LifeBuoy },
-  { id: "faqs", label: "FAQs", icon: HelpCircle },
-  { id: "tutorials", label: "Video Tutorials", icon: Video },
-  { id: "documentation", label: "Documentation", icon: BookOpen },
-  { id: "contacts", label: "Contact Support", icon: MessageCircle },
-  { id: "troubleshooting", label: "Troubleshooting", icon: AlertCircle },
-  { id: "release-notes", label: "Release Notes", icon: FileText },
+  {
+    id: "getting-started",
+    label: "Getting Started",
+    shortLabel: "Start",
+    icon: LifeBuoy,
+  },
+  { id: "faqs", label: "FAQs", shortLabel: "FAQs", icon: HelpCircle },
+  {
+    id: "tutorials",
+    label: "Video Tutorials",
+    shortLabel: "Videos",
+    icon: Video,
+  },
+  {
+    id: "documentation",
+    label: "Documentation",
+    shortLabel: "Docs",
+    icon: BookOpen,
+  },
+  {
+    id: "contacts",
+    label: "Contact Support",
+    shortLabel: "Contact",
+    icon: MessageCircle,
+  },
+  {
+    id: "troubleshooting",
+    label: "Troubleshooting",
+    shortLabel: "Fix",
+    icon: AlertCircle,
+  },
+  {
+    id: "release-notes",
+    label: "Release Notes",
+    shortLabel: "Updates",
+    icon: FileText,
+  },
 ];
 
 const faqs: FaqItem[] = [
@@ -108,7 +138,7 @@ const contacts: ContactItem[] = [
     description: "Send us an email and we'll respond within 24 hours.",
     icon: Mail,
     action: () => window.open("mailto:support@doza.com", "_blank"),
-    color: "from-blue-500 to-blue-600",
+    tone: "emerald",
   },
   {
     id: "chat",
@@ -116,7 +146,7 @@ const contacts: ContactItem[] = [
     description: "Chat with our support team in real-time.",
     icon: MessageCircle,
     action: () => alert("Chat feature coming soon!"),
-    color: "from-emerald-500 to-teal-500",
+    tone: "emerald",
   },
   {
     id: "phone",
@@ -124,7 +154,7 @@ const contacts: ContactItem[] = [
     description: "Call us during business hours for urgent matters.",
     icon: Phone,
     action: () => alert("Call +234 800 000 0000"),
-    color: "from-purple-500 to-pink-500",
+    tone: "slate",
   },
   {
     id: "whatsapp",
@@ -132,7 +162,7 @@ const contacts: ContactItem[] = [
     description: "Reach us on WhatsApp for quick assistance.",
     icon: MessageCircle,
     action: () => alert("WhatsApp +234 800 000 0000"),
-    color: "from-green-500 to-emerald-600",
+    tone: "emerald",
   },
 ];
 
@@ -143,40 +173,90 @@ const tutorials = [
   { id: "4", title: "Appointments & Scheduling", duration: "10:20" },
 ];
 
-// ─── Helper Components ──────────────────────────────────────────────
+// ─── Shared style helpers ────────────────────────────────────────────
+
+const toneStyles: Record<
+  string,
+  { card: string; iconBox: string; text: string; hover: string }
+> = {
+  emerald: {
+    card: "bg-white border-slate-200",
+    iconBox: "bg-emerald-50 text-emerald-600 border border-emerald-100",
+    text: "text-emerald-700",
+    hover: "hover:border-emerald-200",
+  },
+  slate: {
+    card: "bg-white border-slate-200",
+    iconBox: "bg-slate-100 text-slate-600 border border-slate-200",
+    text: "text-slate-700",
+    hover: "hover:border-slate-300",
+  },
+  rose: {
+    card: "bg-white border-slate-200",
+    iconBox: "bg-rose-50 text-rose-600 border border-rose-100",
+    text: "text-rose-700",
+    hover: "hover:border-rose-200",
+  },
+};
+
+// ─── Section header ──────────────────────────────────────────────────
+
+function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
+  return (
+    <div className="flex items-center gap-2.5 mb-3">
+      <div className="p-1.5 md:p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-600 shrink-0">
+        <Icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+      </div>
+      <h2
+        className={cn(
+          "text-base md:text-xl font-bold text-slate-900 leading-none",
+          bebasNeue.className,
+        )}
+      >
+        {title}
+      </h2>
+    </div>
+  );
+}
+
+// ─── FAQ Accordion ───────────────────────────────────────────────────
 
 function FaqAccordion({ items }: { items: FaqItem[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {items.map((faq) => {
         const isOpen = openId === faq.id;
         return (
           <div
             key={faq.id}
-            className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+            className={cn(
+              "bg-white rounded-xl border overflow-hidden transition-colors",
+              isOpen ? "border-emerald-200" : "border-slate-200",
+            )}
           >
             <button
               onClick={() => setOpenId(isOpen ? null : faq.id)}
-              className="w-full px-5 py-4 flex items-center justify-between text-left focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              className="w-full px-3.5 md:px-4 py-3 md:py-3.5 flex items-center justify-between gap-3 text-left"
             >
               <span
                 className={cn(
-                  "font-medium text-slate-800 text-sm",
+                  "font-semibold text-slate-800 text-xs md:text-sm leading-snug",
                   poppins.className,
                 )}
               >
                 {faq.question}
               </span>
-              {isOpen ? (
-                <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
-              )}
+              <ChevronDown
+                className={cn(
+                  "w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform",
+                  isOpen && "rotate-180",
+                )}
+              />
             </button>
             {isOpen && (
-              <div className="px-5 pb-5 pt-1 text-sm text-slate-600 border-t border-slate-100">
+              <div className="px-3.5 md:px-4 pb-3.5 md:pb-4 pt-0 text-[11px] md:text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
                 {faq.answer}
               </div>
             )}
@@ -187,34 +267,6 @@ function FaqAccordion({ items }: { items: FaqItem[] }) {
   );
 }
 
-function SectionLink({ section, isActive, onClick }: any) {
-  const Icon = section.icon;
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-left group",
-        isActive
-          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200/50"
-          : "text-slate-500 hover:bg-emerald-50 hover:text-emerald-600",
-      )}
-    >
-      <Icon
-        size={17}
-        className={
-          isActive
-            ? "text-white"
-            : "text-slate-400 group-hover:text-emerald-600"
-        }
-      />
-      <span className={cn("text-sm font-medium", poppins.className)}>
-        {section.label}
-      </span>
-      {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
-    </button>
-  );
-}
-
 // ─── Main Component ──────────────────────────────────────────────────
 
 export default function HelpPanel() {
@@ -222,7 +274,6 @@ export default function HelpPanel() {
   const [activeSection, setActiveSection] = useState("getting-started");
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Filter FAQs by search
   const filteredFaqs = faqs.filter(
     (faq) =>
       faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -239,7 +290,6 @@ export default function HelpPanel() {
     }
   };
 
-  // Intersection Observer for active section tracking
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -265,102 +315,159 @@ export default function HelpPanel() {
   };
 
   return (
-    <div className={cn("pb-20", poppins.className)}>
-      {/* ─── Mobile Header ───────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 px-4 py-3 md:hidden">
-        <div className="flex items-center justify-between">
-          <h2
-            className={cn(
-              "text-lg font-bold text-slate-800",
-              bebasNeue.className,
-            )}
-          >
-            Help Center
-          </h2>
-          <div className="flex items-center gap-2">
-            <button className="p-2 bg-emerald-600 text-white rounded-xl text-xs font-medium">
-              <MessageCircle className="w-4 h-4" />
+    <div className={cn("pb-24", poppins.className)}>
+      {/* ─── Mobile sticky header ──────────────────────────── */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 md:hidden">
+        <div className="px-3 pt-3 pb-2">
+          {/* Row 1: title + contact button */}
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+              <h2
+                className={cn(
+                  "text-base font-bold text-slate-900 truncate",
+                  bebasNeue.className,
+                )}
+              >
+                Help Center
+              </h2>
+            </div>
+            <button
+              onClick={() => scrollToSection("contacts")}
+              className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors shrink-0"
+              aria-label="Contact support"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
-        <div className="relative mt-2">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search help topics..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
-          />
+
+          {/* Row 2: search */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search help topics…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200 rounded-full transition-colors"
+                aria-label="Clear search"
+              >
+                <span className="text-slate-400 text-xs">✕</span>
+              </button>
+            )}
+          </div>
+
+          {/* Row 3: section chips — horizontal scroll */}
+          <div className="-mx-3 px-3 mt-2.5 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-2">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={cn(
+                    "shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all whitespace-nowrap",
+                    isActive
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100",
+                  )}
+                >
+                  <Icon className="w-3 h-3" />
+                  {section.shortLabel}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row max-w-7xl mx-auto px-4 sm:px-6 gap-6 md:gap-8 pt-4 md:pt-6">
-        {/* ─── LEFT SIDEBAR ──────────────────────────────────────────── */}
-        <aside className="md:w-64 lg:w-72 flex-shrink-0">
-          <div className="sticky top-24 space-y-4">
-            {/* Desktop header */}
-            <div className="hidden md:block">
+      {/* ─── Layout ────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row max-w-7xl mx-auto px-3 md:px-6 gap-4 md:gap-8 pt-3 md:pt-6">
+        {/* ─── LEFT SIDEBAR (desktop only) ───────────────── */}
+        <aside className="hidden md:block md:w-56 lg:w-64 flex-shrink-0">
+          <div className="sticky top-24 space-y-3">
+            <div>
               <h1
                 className={cn(
-                  "text-2xl font-bold text-slate-800",
+                  "text-2xl font-bold text-slate-900 leading-none",
                   bebasNeue.className,
                 )}
               >
                 Help Center
               </h1>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-1">
                 Find answers and support
               </p>
             </div>
 
-            {/* Desktop search */}
-            <div className="hidden md:block relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
+                className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none transition-all"
               />
             </div>
 
-            {/* Navigation */}
-            <nav className="space-y-1">
-              {sections.map((section) => (
-                <SectionLink
-                  key={section.id}
-                  section={section}
-                  isActive={activeSection === section.id}
-                  onClick={() => scrollToSection(section.id)}
-                />
-              ))}
-            </nav>
-
-            {/* Quick contact card */}
-            <div className="hidden md:block bg-emerald-50/80 rounded-xl p-4 border border-emerald-200/60 mt-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
-                  <LifeBuoy className="w-4 h-4" />
-                </div>
-                <div>
-                  <p
+            <nav className="space-y-0.5">
+              {sections.map((section) => {
+                const Icon = section.icon;
+                const isActive = activeSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
                     className={cn(
-                      "text-xs font-bold text-slate-700",
-                      poppins.className,
+                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-left",
+                      isActive
+                        ? "bg-emerald-600 text-white"
+                        : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700",
                     )}
                   >
+                    <Icon
+                      className={cn(
+                        "w-3.5 h-3.5 shrink-0",
+                        isActive
+                          ? "text-white"
+                          : "text-slate-400 group-hover:text-emerald-600",
+                      )}
+                    />
+                    <span className="text-xs font-semibold truncate">
+                      {section.label}
+                    </span>
+                    {isActive && (
+                      <ChevronRight className="w-3 h-3 ml-auto shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100 mt-3">
+              <div className="flex items-start gap-2">
+                <div className="p-1.5 bg-emerald-100 rounded-lg text-emerald-600 shrink-0">
+                  <LifeBuoy className="w-3 h-3" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-slate-800">
                     Need urgent help?
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-[10px] text-slate-500 mt-0.5">
                     Contact our team 24/7
                   </p>
                   <button
                     onClick={() => scrollToSection("contacts")}
-                    className="mt-2 text-[10px] font-medium text-emerald-600 hover:underline flex items-center gap-1"
+                    className="mt-1.5 text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1 uppercase tracking-wide"
                   >
-                    Get in touch <ArrowRight className="w-3 h-3" />
+                    Get in touch <ArrowRight className="w-2.5 h-2.5" />
                   </button>
                 </div>
               </div>
@@ -368,32 +475,19 @@ export default function HelpPanel() {
           </div>
         </aside>
 
-        {/* ─── RIGHT CONTENT ─────────────────────────────────────────── */}
-        <main className="flex-1 min-w-0 space-y-10 md:space-y-12">
-          {/* ─── Getting Started ────────────────────────────────────── */}
+        {/* ─── RIGHT CONTENT ─────────────────────────────── */}
+        <main className="flex-1 min-w-0 space-y-6 md:space-y-10">
+          {/* ─── Getting Started ─────────────────────────── */}
           <section
             ref={setRef("getting-started")}
             data-section-id="getting-started"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
-                <LifeBuoy className="w-5 h-5" />
-              </div>
-              <h2
-                className={cn(
-                  "text-xl font-bold text-slate-800",
-                  bebasNeue.className,
-                )}
-              >
-                Getting Started
-              </h2>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-              <p className="text-sm text-slate-600">
-                Welcome to Doza! Here's a quick guide to help you get started
-                with the platform.
+            <SectionHeader icon={LifeBuoy} title="Getting Started" />
+            <div className="bg-white rounded-2xl p-3.5 md:p-5 border border-slate-200">
+              <p className="text-[11px] md:text-xs text-slate-600 mb-3">
+                Welcome to Doza! Here's a quick guide to help you get started.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-2.5">
                 {[
                   { label: "Create your first patient", icon: Users },
                   { label: "Schedule an appointment", icon: Calendar },
@@ -402,10 +496,12 @@ export default function HelpPanel() {
                 ].map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60"
+                    className="flex items-center gap-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
                   >
-                    <item.icon className="w-4 h-4 text-emerald-600" />
-                    <span className="text-sm font-medium text-slate-700">
+                    <div className="p-1.5 bg-white border border-slate-200 rounded-lg text-emerald-600 shrink-0">
+                      <item.icon className="w-3 h-3" />
+                    </div>
+                    <span className="text-[11px] md:text-xs font-semibold text-slate-700 truncate">
                       {item.label}
                     </span>
                   </div>
@@ -414,27 +510,23 @@ export default function HelpPanel() {
             </div>
           </section>
 
-          {/* ─── FAQs ────────────────────────────────────────────────── */}
+          {/* ─── FAQs ────────────────────────────────────── */}
           <section ref={setRef("faqs")} data-section-id="faqs">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
-                <HelpCircle className="w-5 h-5" />
-              </div>
-              <h2
-                className={cn(
-                  "text-xl font-bold text-slate-800",
-                  bebasNeue.className,
-                )}
-              >
-                Frequently Asked Questions
-              </h2>
-            </div>
+            <SectionHeader
+              icon={HelpCircle}
+              title="Frequently Asked Questions"
+            />
             {filteredFaqs.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center border border-slate-200/80 shadow-sm">
-                <p className="text-slate-500">No results found</p>
+              <div className="bg-white rounded-2xl p-6 md:p-8 text-center border border-slate-200">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-2.5">
+                  <Search className="w-5 h-5 text-slate-300" />
+                </div>
+                <p className="text-xs md:text-sm text-slate-500 mb-2">
+                  No results found
+                </p>
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="mt-2 text-emerald-600 font-medium hover:underline"
+                  className="text-[11px] md:text-xs font-bold uppercase tracking-wide text-emerald-700 hover:underline"
                 >
                   Clear search
                 </button>
@@ -444,68 +536,44 @@ export default function HelpPanel() {
             )}
           </section>
 
-          {/* ─── Video Tutorials ────────────────────────────────────── */}
+          {/* ─── Video Tutorials ─────────────────────────── */}
           <section ref={setRef("tutorials")} data-section-id="tutorials">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
-                <Video className="w-5 h-5" />
-              </div>
-              <h2
-                className={cn(
-                  "text-xl font-bold text-slate-800",
-                  bebasNeue.className,
-                )}
-              >
-                Video Tutorials
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <SectionHeader icon={Video} title="Video Tutorials" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-2.5">
               {tutorials.map((tutorial) => (
                 <button
                   key={tutorial.id}
-                  className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-200/60 transition-all text-left group"
+                  className="flex items-center gap-2.5 p-3 bg-white rounded-xl border border-slate-200 hover:border-emerald-200 transition-colors text-left group"
                 >
-                  <div className="p-2.5 bg-emerald-100 rounded-lg text-emerald-600 group-hover:bg-emerald-200 transition-colors">
-                    <Video className="w-5 h-5" />
+                  <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-600 group-hover:bg-emerald-100 transition-colors shrink-0">
+                    <Video className="w-3.5 h-3.5" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] md:text-xs font-bold text-slate-800 truncate">
                       {tutorial.title}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-[10px] md:text-[11px] text-slate-500 tabular-nums mt-0.5">
                       {tutorial.duration}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all ml-auto" />
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 shrink-0" />
                 </button>
               ))}
             </div>
           </section>
 
-          {/* ─── Documentation ──────────────────────────────────────── */}
+          {/* ─── Documentation ───────────────────────────── */}
           <section
             ref={setRef("documentation")}
             data-section-id="documentation"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <h2
-                className={cn(
-                  "text-xl font-bold text-slate-800",
-                  bebasNeue.className,
-                )}
-              >
-                Documentation
-              </h2>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-              <p className="text-sm text-slate-600">
+            <SectionHeader icon={BookOpen} title="Documentation" />
+            <div className="bg-white rounded-2xl p-3.5 md:p-5 border border-slate-200">
+              <p className="text-[11px] md:text-xs text-slate-600 mb-3">
                 Comprehensive guides and API references to help you integrate
                 and use Doza effectively.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-2.5">
                 {[
                   { label: "API Reference", icon: FileText },
                   { label: "Integration Guide", icon: BookOpen },
@@ -514,64 +582,59 @@ export default function HelpPanel() {
                 ].map((doc) => (
                   <button
                     key={doc.label}
-                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60 hover:bg-emerald-50 hover:border-emerald-200 transition-all text-left"
+                    className="flex items-center gap-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:border-emerald-200 transition-colors text-left group"
                   >
-                    <doc.icon className="w-4 h-4 text-emerald-600" />
-                    <span className="text-sm font-medium text-slate-700">
+                    <div className="p-1.5 bg-white border border-slate-200 rounded-lg text-emerald-600 shrink-0">
+                      <doc.icon className="w-3 h-3" />
+                    </div>
+                    <span className="text-[11px] md:text-xs font-semibold text-slate-700 flex-1 truncate">
                       {doc.label}
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 ml-auto" />
+                    <ArrowRight className="w-3 h-3 text-slate-400 group-hover:text-emerald-500 shrink-0" />
                   </button>
                 ))}
               </div>
             </div>
           </section>
 
-          {/* ─── Contact Support ────────────────────────────────────── */}
+          {/* ─── Contact Support ─────────────────────────── */}
           <section ref={setRef("contacts")} data-section-id="contacts">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
-                <MessageCircle className="w-5 h-5" />
-              </div>
-              <h2
-                className={cn(
-                  "text-xl font-bold text-slate-800",
-                  bebasNeue.className,
-                )}
-              >
-                Contact Support
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SectionHeader icon={MessageCircle} title="Contact Support" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-2.5">
               {contacts.map((contact) => {
                 const Icon = contact.icon;
+                const tone = toneStyles[contact.tone];
                 return (
                   <button
                     key={contact.id}
                     onClick={contact.action}
-                    className="group p-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-lg hover:border-emerald-200/60 transition-all text-left hover:-translate-y-0.5"
+                    className={cn(
+                      "group p-3.5 md:p-4 rounded-xl border transition-colors text-left",
+                      tone.card,
+                      tone.hover,
+                    )}
                   >
                     <div
                       className={cn(
-                        "p-2.5 rounded-xl w-fit mb-3 bg-gradient-to-br text-white shadow-md",
-                        contact.color,
+                        "p-2 rounded-lg w-fit mb-2.5",
+                        tone.iconBox,
                       )}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-4 h-4" />
                     </div>
-                    <h3
-                      className={cn(
-                        "font-semibold text-slate-800",
-                        poppins.className,
-                      )}
-                    >
+                    <h3 className="text-xs md:text-sm font-bold text-slate-900">
                       {contact.title}
                     </h3>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <p className="text-[10px] md:text-[11px] text-slate-500 mt-0.5 leading-relaxed">
                       {contact.description}
                     </p>
-                    <div className="mt-3 text-sm font-medium text-emerald-600 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                      Contact <ChevronRight className="w-4 h-4" />
+                    <div
+                      className={cn(
+                        "mt-2.5 text-[10px] font-bold uppercase tracking-wide inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform",
+                        tone.text,
+                      )}
+                    >
+                      Contact <ChevronRight className="w-3 h-3" />
                     </div>
                   </button>
                 );
@@ -579,26 +642,14 @@ export default function HelpPanel() {
             </div>
           </section>
 
-          {/* ─── Troubleshooting ────────────────────────────────────── */}
+          {/* ─── Troubleshooting ─────────────────────────── */}
           <section
             ref={setRef("troubleshooting")}
             data-section-id="troubleshooting"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <h2
-                className={cn(
-                  "text-xl font-bold text-slate-800",
-                  bebasNeue.className,
-                )}
-              >
-                Troubleshooting
-              </h2>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-              <div className="space-y-4">
+            <SectionHeader icon={AlertCircle} title="Troubleshooting" />
+            <div className="bg-white rounded-2xl p-3.5 md:p-5 border border-slate-200">
+              <div className="space-y-2 md:space-y-2.5">
                 {[
                   {
                     issue: "Patient data not saving",
@@ -618,12 +669,12 @@ export default function HelpPanel() {
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/60"
+                    className="p-2.5 md:p-3 bg-slate-50 border border-slate-200 rounded-xl"
                   >
-                    <p className="text-sm font-medium text-slate-800">
+                    <p className="text-[11px] md:text-xs font-bold text-slate-800">
                       {item.issue}
                     </p>
-                    <p className="text-sm text-slate-600 mt-0.5">
+                    <p className="text-[10px] md:text-[11px] text-slate-600 mt-1 leading-relaxed">
                       → {item.solution}
                     </p>
                   </div>
@@ -632,26 +683,14 @@ export default function HelpPanel() {
             </div>
           </section>
 
-          {/* ─── Release Notes ──────────────────────────────────────── */}
+          {/* ─── Release Notes ───────────────────────────── */}
           <section
             ref={setRef("release-notes")}
             data-section-id="release-notes"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
-                <FileText className="w-5 h-5" />
-              </div>
-              <h2
-                className={cn(
-                  "text-xl font-bold text-slate-800",
-                  bebasNeue.className,
-                )}
-              >
-                Release Notes
-              </h2>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-              <div className="space-y-4">
+            <SectionHeader icon={FileText} title="Release Notes" />
+            <div className="bg-white rounded-2xl p-3.5 md:p-5 border border-slate-200">
+              <div className="space-y-2 md:space-y-2.5">
                 {[
                   {
                     version: "v2.4.0",
@@ -683,23 +722,23 @@ export default function HelpPanel() {
                 ].map((note) => (
                   <div
                     key={note.version}
-                    className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/60"
+                    className="p-2.5 md:p-3 bg-slate-50 border border-slate-200 rounded-xl"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-sm font-bold text-emerald-600">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <span className="text-[11px] md:text-xs font-bold text-emerald-700">
                         {note.version}
                       </span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-[10px] text-slate-500 tabular-nums">
                         {note.date}
                       </span>
                     </div>
-                    <ul className="mt-2 space-y-1">
+                    <ul className="space-y-1">
                       {note.features.map((feature) => (
                         <li
                           key={feature}
-                          className="text-sm text-slate-600 flex items-center gap-2"
+                          className="text-[10px] md:text-[11px] text-slate-600 flex items-center gap-1.5"
                         >
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                          <CheckCircle className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                           {feature}
                         </li>
                       ))}
@@ -710,9 +749,9 @@ export default function HelpPanel() {
             </div>
           </section>
 
-          {/* ─── Footer ──────────────────────────────────────────────── */}
-          <div className="text-center text-xs text-slate-400 border-t border-slate-200/80 pt-6 mt-4">
-            Doza Health © 2024 — Help Center v1.0
+          {/* ─── Footer ──────────────────────────────────── */}
+          <div className="text-center text-[10px] text-slate-400 border-t border-slate-200 pt-4">
+            Doza Medic
           </div>
         </main>
       </div>

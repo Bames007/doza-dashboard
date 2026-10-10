@@ -47,6 +47,7 @@ function getAuthHeaders(userId?: string): Record<string, string> {
 // ─── Cache Helpers ──────────────────────────────────────────────────
 
 const CACHE_PREFIX = "api_cache_";
+const MAX_QUEUE_SIZE = 50;
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getCacheKey(url: string, params?: Record<string, any>): string {
@@ -109,6 +110,10 @@ function setQueue(queue: QueuedRequest[]): void {
 
 function addToQueue(request: Omit<QueuedRequest, "id" | "timestamp">): void {
   const queue = getQueue();
+  if (queue.length >= MAX_QUEUE_SIZE) {
+    logger.warn(`Offline queue full (${MAX_QUEUE_SIZE}), dropping oldest`);
+    queue.shift();
+  }
   queue.push({
     ...request,
     id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
@@ -131,7 +136,7 @@ export async function processOfflineQueue(): Promise<void> {
   for (const request of queue) {
     try {
       const { url, method, body, headers, userId } = request;
-      const response = await fetchWithRetry(
+      await fetchWithRetry(
         url,
         {
           method,
@@ -141,20 +146,29 @@ export async function processOfflineQueue(): Promise<void> {
         3,
         userId,
       );
-      if (response.ok) {
+
+      // fetchWithRetry resolves only on 2xx — success
+      removeFromQueue(request.id);
+      logger.info(`Queued request succeeded: ${method} ${url}`);
+    } catch (error: any) {
+      const message = error?.message || "";
+
+      // Permanent failure (4xx) — URL/payload is wrong, will never succeed.
+      // Drop from queue so it stops retrying forever.
+      if (/^HTTP 4\d\d/.test(message)) {
         removeFromQueue(request.id);
-        logger.info(`Queued request succeeded: ${method} ${url}`);
-      } else {
         logger.warn(
-          `Queued request failed (will retry later): ${method} ${url}`,
+          `Queued request dropped (permanent): ${request.method} ${request.url} — ${message}`,
+        );
+      } else {
+        // Network error, timeout, or 5xx — keep in queue for next attempt
+        logger.warn(
+          `Queued request failed (will retry): ${request.method} ${request.url} — ${message}`,
         );
       }
-    } catch (error) {
-      logger.error(error, `Failed to process queued request: ${request.url}`);
     }
   }
 }
-
 // ─── Internal fetch with retry ─────────────────────────────────────
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -350,13 +364,4 @@ export async function apiDelete<T = any>(
   }
 
   return apiFetch<T>(url, fetchOptions);
-}
-
-// ─── Online event listener ─────────────────────────────────────────
-
-if (typeof window !== "undefined") {
-  window.addEventListener("online", () => {
-    logger.info("Online – processing offline queue");
-    processOfflineQueue();
-  });
 }

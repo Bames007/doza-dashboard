@@ -9,14 +9,12 @@ import {
   Calendar,
   Activity,
   Package,
-  Bed,
   RefreshCw,
   Download,
   ArrowUpRight,
   ArrowDownRight,
-  CreditCard,
-  CheckCircle,
   Clock,
+  CheckCircle,
   AlertCircle,
 } from "lucide-react";
 import { useDashboard } from "../DashboardContext";
@@ -43,12 +41,12 @@ interface StatCardProps {
   label: string;
   value: string | number;
   icon: any;
-  color: "emerald" | "blue" | "purple" | "amber" | "rose" | "teal";
+  color: "emerald" | "slate" | "rose" | "amber";
   subtitle?: string;
   trend?: { value: number; direction: "up" | "down" };
 }
 
-// ─── Helper Components ──────────────────────────────────────────────
+// ─── Stat Card ────────────────────────────────────────────────────────
 
 function StatCard({
   label,
@@ -58,31 +56,35 @@ function StatCard({
   subtitle,
   trend,
 }: StatCardProps) {
-  const colorMap = {
-    emerald: "bg-emerald-100 text-emerald-700",
-    blue: "bg-blue-100 text-blue-700",
-    purple: "bg-purple-100 text-purple-700",
-    amber: "bg-amber-100 text-amber-700",
-    rose: "bg-rose-100 text-rose-700",
-    teal: "bg-teal-100 text-teal-700",
+  const colorMap: Record<string, string> = {
+    emerald: "bg-emerald-50 text-emerald-600 border border-emerald-100",
+    slate: "bg-slate-50 text-slate-600 border border-slate-200",
+    rose: "bg-rose-50 text-rose-600 border border-rose-100",
+    amber: "bg-amber-50 text-amber-600 border border-amber-100",
   };
+
   return (
-    <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-3">
-        <div className={cn("p-2.5 rounded-xl", colorMap[color])}>
-          <Icon className="w-5 h-5" aria-hidden="true" />
+    <div className="bg-white rounded-2xl p-3.5 md:p-4 border border-slate-200 shadow-sm">
+      <div className="flex items-center justify-between mb-2.5">
+        <div
+          className={cn(
+            "p-1.5 md:p-2 rounded-lg",
+            colorMap[color] || colorMap.emerald,
+          )}
+        >
+          <Icon className="w-3.5 h-3.5 md:w-4 md:h-4" aria-hidden="true" />
         </div>
         {trend && (
           <div
             className={cn(
-              "flex items-center gap-1 text-xs font-medium",
-              trend.direction === "up" ? "text-emerald-700" : "text-rose-700",
+              "flex items-center gap-0.5 text-[10px] md:text-xs font-bold tabular-nums",
+              trend.direction === "up" ? "text-emerald-600" : "text-rose-600",
             )}
           >
             {trend.direction === "up" ? (
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              <ArrowUpRight className="w-3 h-3" />
             ) : (
-              <ArrowDownRight className="w-3.5 h-3.5" />
+              <ArrowDownRight className="w-3 h-3" />
             )}
             {trend.value}%
           </div>
@@ -90,57 +92,60 @@ function StatCard({
       </div>
       <h3
         className={cn(
-          "text-2xl md:text-3xl font-bold text-slate-800",
+          "text-xl md:text-2xl font-bold text-slate-900 tabular-nums leading-none",
           bebasNeue.className,
         )}
       >
         {typeof value === "number" ? value.toLocaleString() : value}
       </h3>
-      <p className={cn("text-sm text-slate-600", poppins.className)}>{label}</p>
-      {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
+      <p className="text-[11px] md:text-xs font-medium text-slate-600 mt-1 truncate">
+        {label}
+      </p>
+      {subtitle && (
+        <p className="text-[9px] md:text-[10px] text-slate-400 mt-0.5 truncate">
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }
 
+// ─── Skeleton ─────────────────────────────────────────────────────────
+
 function AnalyticsSkeleton() {
   return (
-    <div className="space-y-6 pb-20 px-4 sm:px-0 animate-pulse">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="h-8 w-1 rounded-full bg-slate-200" />
-            <div className="h-4 w-40 bg-slate-200 rounded" />
-            <div className="h-5 w-16 bg-slate-200 rounded-full" />
-          </div>
-          <div className="h-9 w-64 bg-slate-200 rounded-lg" />
-          <div className="h-5 w-80 bg-slate-100 rounded mt-2" />
+    <div className="pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto animate-pulse">
+      <div className="mb-3 md:mb-5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <div className="h-5 w-0.5 bg-slate-200 rounded-full" />
+          <div className="h-3 w-32 bg-slate-200 rounded" />
+          <div className="h-4 w-16 bg-slate-200 rounded-full" />
         </div>
-        <div className="h-10 w-40 bg-slate-200 rounded-xl" />
+        <div className="h-7 w-56 bg-slate-200 rounded mb-1" />
+        <div className="h-3 w-64 bg-slate-100 rounded" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3 md:mb-5">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-2xl p-5 border border-slate-200/80"
-          >
-            <div className="flex justify-between mb-4">
-              <div className="w-12 h-12 bg-slate-200 rounded-xl" />
-              <div className="w-16 h-6 bg-slate-200 rounded-full" />
-            </div>
-            <div className="h-8 w-24 bg-slate-200 rounded mb-1" />
-            <div className="h-4 w-20 bg-slate-200 rounded" />
-          </div>
+            className="bg-white rounded-2xl p-3.5 border border-slate-200 h-24"
+          />
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3 md:mb-5">
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-white rounded-2xl p-3.5 border border-slate-200 h-24"
+          />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 md:gap-3">
         {[...Array(2)].map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-2xl p-6 border border-slate-200/80"
-          >
-            <div className="h-6 w-32 bg-slate-200 rounded mb-4" />
-            <div className="h-64 bg-slate-100 rounded-xl" />
-          </div>
+            className="bg-white rounded-2xl p-4 border border-slate-200 h-64"
+          />
         ))}
       </div>
     </div>
@@ -168,7 +173,6 @@ export default function AnalyticsPanel() {
   });
   const [dischargedCount, setDischargedCount] = useState(0);
 
-  // Fetch billing stats and patient discharge counts
   useEffect(() => {
     const fetchBillingData = async () => {
       if (!center?.id || !user?.id) return;
@@ -215,7 +219,7 @@ export default function AnalyticsPanel() {
         if (result.success) {
           const patients = result.data || [];
           const discharged = patients.filter(
-            (p: any) => p.status === "discharged" || p.status === "discharged",
+            (p: any) => p.status === "discharged",
           ).length;
           setDischargedCount(discharged);
         }
@@ -232,12 +236,15 @@ export default function AnalyticsPanel() {
 
   if (error) {
     return (
-      <div className="p-8 text-center">
-        <p className="font-semibold text-rose-700">Failed to load analytics</p>
-        <p className="text-sm text-slate-600">{error}</p>
+      <div className="pb-24 pt-6 px-4 text-center">
+        <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-3" />
+        <p className="font-bold text-rose-700 text-sm">
+          Failed to load analytics
+        </p>
+        <p className="text-xs text-slate-500 mt-1">{error}</p>
         <button
           onClick={refetch}
-          className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+          className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-emerald-700 transition-colors"
         >
           Retry
         </button>
@@ -247,232 +254,314 @@ export default function AnalyticsPanel() {
 
   if (!data) {
     return (
-      <div className="p-8 text-center text-slate-500">No data available</div>
+      <div className="pb-24 pt-6 px-4 text-center">
+        <p className="text-xs text-slate-500">No data available</p>
+      </div>
     );
   }
 
-  const {
-    patients,
-    appointments,
-    sales,
-    inventory,
-    staff,
-    beds,
-    recentActivity,
-  } = data;
+  const { patients, appointments, sales, inventory, staff, recentActivity } =
+    data;
 
   const CHART_COLORS = {
-    teal: "#0d9488",
-    blue: "#2563eb",
-    amber: "#d97706",
-    purple: "#7c3aed",
-    rose: "#e11d48",
     emerald: "#059669",
+    slate: "#475569",
+    slateLight: "#94a3b8",
+    slateLighter: "#cbd5e1",
   };
 
   const PIE_COLORS = [
-    CHART_COLORS.teal,
-    CHART_COLORS.blue,
-    CHART_COLORS.amber,
-    CHART_COLORS.purple,
+    CHART_COLORS.emerald,
+    CHART_COLORS.slate,
+    CHART_COLORS.slateLight,
+    CHART_COLORS.slateLighter,
   ];
 
-  // Combine billing stats with existing stats cards
-  const billingCards = [
+  const billingCards: StatCardProps[] = [
     {
       label: "Total Revenue",
       value: `₦${billingStats.totalRevenue.toLocaleString()}`,
       icon: DollarSign,
-      color: "emerald" as const,
+      color: "emerald",
       subtitle: `${billingStats.paidCount} paid bills`,
     },
     {
       label: "Pending Amount",
       value: `₦${billingStats.pending.toLocaleString()}`,
       icon: Clock,
-      color: "amber" as const,
+      color: "slate",
       subtitle: `${billingStats.totalBills - billingStats.paidCount - billingStats.hmoCount} pending`,
     },
     {
       label: "Overdue",
       value: `₦${billingStats.overdue.toLocaleString()}`,
       icon: AlertCircle,
-      color: "rose" as const,
-      subtitle: "Requires attention",
+      color: "rose",
+      subtitle: "Needs attention",
     },
     {
-      label: "Discharged Patients",
+      label: "Discharged",
       value: dischargedCount,
       icon: CheckCircle,
-      color: "teal" as const,
+      color: "emerald",
       subtitle: `${patients.total || 0} total patients`,
     },
   ];
 
+  const operationCards: StatCardProps[] = [
+    {
+      label: "Total Patients",
+      value: patients.total,
+      icon: Users,
+      color: "emerald",
+      subtitle: `${patients.newThisMonth} new this month`,
+    },
+    {
+      label: "Appointments",
+      value: appointments.total,
+      icon: Calendar,
+      color: "slate",
+      subtitle: `${appointments.upcoming} upcoming · ${appointments.completedToday} today`,
+    },
+    {
+      label: "Active Staff",
+      value: staff.active,
+      icon: Activity,
+      color: "emerald",
+      subtitle: `${staff.total} total staff`,
+    },
+    {
+      label: "Inventory",
+      value: inventory.totalItems,
+      icon: Package,
+      color: "slate",
+      subtitle: `${inventory.lowStock} low stock`,
+    },
+  ];
+
   return (
-    <div className={cn("space-y-6 pb-20 px-4 sm:px-0", poppins.className)}>
-      {/* ─── Header ──────────────────────────────────────────────── */}
-      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="h-8 w-1 rounded-full bg-gradient-to-b from-emerald-600 to-teal-700" />
-            <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-[0.25em]">
+    <div
+      className={cn(
+        "pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto",
+        poppins.className,
+      )}
+    >
+      {/* ─── Header ──────────────────────────────────────────── */}
+      <header className="mb-3 md:mb-5">
+        {/* Row 1: eyebrow + actions */}
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 uppercase tracking-[0.15em] truncate">
               Performance Analytics
             </span>
-            <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+            <span className="text-[9px] md:text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0 truncate max-w-[120px]">
               {center?.centerName || "Center"}
             </span>
           </div>
-          <h1
-            className={cn(
-              "text-4xl md:text-5xl lg:text-6xl text-slate-900 leading-[1.1] tracking-tight",
-              bebasNeue.className,
-            )}
-          >
-            Analytics Dashboard
-          </h1>
-          <p className="text-sm text-slate-600 mt-2 max-w-md">
-            Real-time overview of your center's performance
-          </p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={refetch}
+              className="p-1.5 md:p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+              aria-label="Refresh"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
+            </button>
+            <button
+              className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all text-[10px] md:text-xs font-bold uppercase tracking-wide shadow-sm"
+              aria-label="Export"
+            >
+              <Download className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <span className="hidden sm:inline">Export</span>
+            </button>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="date"
-            value={dateRange.start}
-            onChange={(e) =>
-              setDateRange({ ...dateRange, start: e.target.value })
-            }
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-          />
-          <span className="text-slate-400">to</span>
-          <input
-            type="date"
-            value={dateRange.end}
-            onChange={(e) =>
-              setDateRange({ ...dateRange, end: e.target.value })
-            }
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-          />
-          <button
-            onClick={refetch}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-slate-200/80 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50"
-          >
-            <RefreshCw className="w-4 h-4" /> Refresh
-          </button>
-          <button className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-slate-200/80 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">
-            <Download className="w-4 h-4" /> Export
-          </button>
+
+        {/* Row 2: title */}
+        <h1
+          className={cn(
+            "text-2xl md:text-4xl text-slate-900 leading-none tracking-tight mb-1",
+            bebasNeue.className,
+          )}
+        >
+          Analytics Dashboard
+        </h1>
+        <p className="text-[11px] md:text-xs text-slate-500">
+          Real-time overview of your center's performance
+        </p>
+
+        {/* Row 3: date range picker (compact) */}
+        <div className="mt-3 md:mt-4 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+          <div className="flex items-center gap-2 shrink-0 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+            <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) =>
+                setDateRange({ ...dateRange, start: e.target.value })
+              }
+              className="text-[11px] md:text-xs text-slate-700 bg-transparent outline-none border-none w-[110px] md:w-[120px]"
+            />
+            <span className="text-slate-400 text-[11px]">→</span>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) =>
+                setDateRange({ ...dateRange, end: e.target.value })
+              }
+              className="text-[11px] md:text-xs text-slate-700 bg-transparent outline-none border-none w-[110px] md:w-[120px]"
+            />
+          </div>
+          {(dateRange.start || dateRange.end) && (
+            <button
+              onClick={() => setDateRange({ start: "", end: "" })}
+              className="shrink-0 px-2.5 py-1.5 text-[10px] md:text-xs font-bold uppercase tracking-wide text-slate-600 hover:text-emerald-700 bg-white border border-slate-200 rounded-lg hover:border-emerald-200 transition-colors"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </header>
 
-      {/* ─── Billing & Financial Stats ───────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {billingCards.map((card) => (
-          <StatCard key={card.label} {...card} />
-        ))}
-      </div>
+      {/* ─── Billing & Financial Stats ───────────────────────── */}
+      <section className="mb-3 md:mb-5">
+        <p className="text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-2">
+          Revenue & Billing
+        </p>
+        {/* Horizontal scroll on mobile, grid on desktop */}
+        <div className="-mx-3 px-3 md:mx-0 md:px-0 flex md:grid md:grid-cols-4 gap-2.5 overflow-x-auto md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 md:pb-0">
+          {billingCards.map((card, i) => (
+            <div key={i} className="shrink-0 w-[68%] sm:w-[45%] md:w-auto">
+              <StatCard {...card} />
+            </div>
+          ))}
+        </div>
+      </section>
 
-      {/* ─── Original Stats (Patient, Appointments, Staff, Inventory) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard
-          label="Total Patients"
-          value={patients.total}
-          icon={Users}
-          color="blue"
-          subtitle={`${patients.newThisMonth} new this month`}
-        />
-        <StatCard
-          label="Appointments"
-          value={appointments.total}
-          icon={Calendar}
-          color="purple"
-          subtitle={`${appointments.upcoming} upcoming · ${appointments.completedToday} today`}
-        />
-        <StatCard
-          label="Active Staff"
-          value={staff.active}
-          icon={Activity}
-          color="amber"
-          subtitle={`${staff.total} total staff`}
-        />
-        <StatCard
-          label="Inventory Items"
-          value={inventory.totalItems}
-          icon={Package}
-          color="emerald"
-          subtitle={`${inventory.lowStock} low stock · ₦${inventory.totalValue.toLocaleString()} value`}
-        />
-      </div>
+      {/* ─── Operational Stats ───────────────────────────────── */}
+      <section className="mb-3 md:mb-5">
+        <p className="text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-2">
+          Operations
+        </p>
+        <div className="-mx-3 px-3 md:mx-0 md:px-0 flex md:grid md:grid-cols-4 gap-2.5 overflow-x-auto md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 md:pb-0">
+          {operationCards.map((card, i) => (
+            <div key={i} className="shrink-0 w-[68%] sm:w-[45%] md:w-auto">
+              <StatCard {...card} />
+            </div>
+          ))}
+        </div>
+      </section>
 
-      {/* ─── Charts ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-          <h3
-            className={cn(
-              "text-lg font-bold text-slate-800 mb-4",
-              bebasNeue.className,
-            )}
-          >
-            Revenue Trend
-          </h3>
+      {/* ─── Charts ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 md:gap-3 mb-3 md:mb-5">
+        {/* Revenue Trend */}
+        <div className="bg-white rounded-2xl p-3.5 md:p-4 border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3
+              className={cn(
+                "text-sm md:text-base font-bold text-slate-900",
+                bebasNeue.className,
+              )}
+            >
+              Revenue Trend
+            </h3>
+            <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+              Monthly
+            </span>
+          </div>
           {sales.monthlyRevenue.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-slate-400">
+            <div className="h-48 md:h-56 flex items-center justify-center text-slate-400 text-[11px] md:text-xs">
               No revenue data available
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={sales.monthlyRevenue}>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart
+                data={sales.monthlyRevenue}
+                margin={{ top: 5, right: 8, left: -18, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#475569" fontSize={12} />
-                <YAxis stroke="#475569" fontSize={12} />
+                <XAxis
+                  dataKey="month"
+                  stroke="#94a3b8"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) =>
+                    v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v
+                  }
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "white",
                     border: "1px solid #e2e8f0",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    padding: "8px 12px",
                   }}
-                  formatter={(value) => `₦${Number(value).toLocaleString()}`}
+                  formatter={(value) => [
+                    `₦${Number(value).toLocaleString()}`,
+                    "Revenue",
+                  ]}
+                  labelStyle={{ fontWeight: 600, marginBottom: 4 }}
                 />
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke={CHART_COLORS.teal}
-                  strokeWidth={2}
-                  dot={{ fill: CHART_COLORS.teal, r: 4 }}
-                  activeDot={{ r: 6 }}
+                  stroke={CHART_COLORS.emerald}
+                  strokeWidth={2.5}
+                  dot={{
+                    fill: CHART_COLORS.emerald,
+                    r: 3,
+                    strokeWidth: 0,
+                  }}
+                  activeDot={{ r: 5, strokeWidth: 2, stroke: "white" }}
                 />
               </LineChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-          <h3
-            className={cn(
-              "text-lg font-bold text-slate-800 mb-4",
-              bebasNeue.className,
-            )}
-          >
-            Appointment Status
-          </h3>
+        {/* Appointment Status */}
+        <div className="bg-white rounded-2xl p-3.5 md:p-4 border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3
+              className={cn(
+                "text-sm md:text-base font-bold text-slate-900",
+                bebasNeue.className,
+              )}
+            >
+              Appointment Status
+            </h3>
+            <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+              Total {appointments.total}
+            </span>
+          </div>
           {appointments.byStatus.every((s: any) => s.count === 0) ? (
-            <div className="h-64 flex items-center justify-center text-slate-400">
+            <div className="h-48 md:h-56 flex items-center justify-center text-slate-400 text-[11px] md:text-xs">
               No appointment data available
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
                   data={appointments.byStatus.filter((s: any) => s.count > 0)}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
+                  innerRadius={48}
+                  outerRadius={72}
                   dataKey="count"
                   nameKey="status"
                   label={({ name, percent }) =>
-                    `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
+                    `${((percent ?? 0) * 100).toFixed(0)}%`
                   }
                   labelLine={false}
+                  fontSize={10}
                 >
                   {appointments.byStatus
                     .filter((s: any) => s.count > 0)
@@ -487,45 +576,80 @@ export default function AnalyticsPanel() {
                   contentStyle={{
                     backgroundColor: "white",
                     border: "1px solid #e2e8f0",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    padding: "8px 12px",
                   }}
-                  formatter={(value) => `${value} appointments`}
+                  formatter={(value) => [`${value} appointments`, ""]}
+                  labelStyle={{ fontWeight: 600, marginBottom: 4 }}
                 />
-                <Legend wrapperStyle={{ fontSize: 12, color: "#1e293b" }} />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, color: "#475569" }}
+                  iconSize={8}
+                  iconType="circle"
+                />
               </PieChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      {/* ─── Recent Activity ────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-        <h3
-          className={cn(
-            "text-lg font-bold text-slate-800 mb-4",
-            bebasNeue.className,
-          )}
-        >
-          Recent Activity
-        </h3>
+      {/* ─── Recent Activity ────────────────────────────────── */}
+      <div className="bg-white rounded-2xl p-3.5 md:p-4 border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3
+            className={cn(
+              "text-sm md:text-base font-bold text-slate-900",
+              bebasNeue.className,
+            )}
+          >
+            Recent Activity
+          </h3>
+          <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full tabular-nums">
+            {recentActivity.length}
+          </span>
+        </div>
+
         {recentActivity.length === 0 ? (
-          <p className="text-slate-500 text-sm">No recent activity</p>
+          <div className="text-center py-6">
+            <Activity className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+            <p className="text-[11px] md:text-xs text-slate-500">
+              No recent activity
+            </p>
+          </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-1.5">
             {recentActivity.map((activity: any) => (
               <li
                 key={activity.id}
-                className="flex items-center gap-3 p-3 bg-slate-50/80 rounded-xl border border-slate-200/60 hover:bg-emerald-50/50 transition-colors"
+                className="flex items-start gap-2.5 p-2.5 md:p-3 bg-slate-50/60 rounded-xl border border-slate-100 hover:border-emerald-100 transition-colors"
               >
-                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-700">
-                    {activity.userName} {activity.action} {activity.resource}
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] md:text-xs font-medium text-slate-800 truncate">
+                    <span className="font-bold">{activity.userName}</span>{" "}
+                    {activity.action}{" "}
+                    <span className="text-slate-500">{activity.resource}</span>
                   </p>
-                  <p className="text-xs text-slate-500">
-                    {new Date(activity.timestamp).toLocaleString()}
+                  <p className="text-[9px] md:text-[10px] text-slate-400 mt-0.5 tabular-nums">
+                    {new Date(activity.timestamp).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </div>
-                <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                <span
+                  className={cn(
+                    "text-[9px] md:text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full border shrink-0",
+                    activity.status === "success"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : activity.status === "failure"
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                        : "bg-slate-100 text-slate-600 border-slate-200",
+                  )}
+                >
                   {activity.status}
                 </span>
               </li>

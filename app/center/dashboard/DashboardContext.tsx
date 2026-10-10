@@ -439,7 +439,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     <DashboardContext.Provider value={value}>
       {children}
 
-      <DebugPanel />
+      {/* <DebugPanel /> */}
     </DashboardContext.Provider>
   );
 };

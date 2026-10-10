@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ClipboardList,
   Plus,
@@ -37,6 +37,7 @@ import { RequisitionModal } from "./RequisitionModal";
 import { getAvatarColor } from "@/app/utils/utils";
 
 // ─── Types ──────────────────────────────────────────────────────────
+
 interface ApprovalHistoryEntry {
   role: string;
   userId: string;
@@ -63,7 +64,91 @@ interface Requisition {
   [key: string]: any;
 }
 
-// ─── Action Modal (reusable) ──────────────────────────────────────
+// ─── Shared status styling ─────────────────────────────────────────
+
+const getStatusStyle = (status: string) => {
+  const map: Record<string, { bg: string; icon: any; label: string }> = {
+    pending: {
+      bg: "bg-amber-50 text-amber-700 border-amber-200",
+      icon: Clock,
+      label: "Pending",
+    },
+    approved: {
+      bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      icon: CheckCircle,
+      label: "Approved",
+    },
+    fulfilled: {
+      bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      icon: CheckCircle,
+      label: "Fulfilled",
+    },
+    rejected: {
+      bg: "bg-rose-50 text-rose-700 border-rose-200",
+      icon: XCircle,
+      label: "Rejected",
+    },
+    draft: {
+      bg: "bg-slate-100 text-slate-600 border-slate-200",
+      icon: AlertTriangle,
+      label: "Draft",
+    },
+  };
+  return (
+    map[status] || {
+      bg: "bg-slate-100 text-slate-600 border-slate-200",
+      icon: AlertTriangle,
+      label: status,
+    }
+  );
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const style = getStatusStyle(status);
+  const Icon = style.icon;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wide rounded-full border shrink-0",
+        style.bg,
+      )}
+    >
+      <Icon className="w-2.5 h-2.5" />
+      {style.label}
+    </span>
+  );
+};
+
+const PriorityBadge = ({ priority }: { priority: string }) => {
+  if (priority !== "urgent" && priority !== "stat") return null;
+  const isStat = priority === "stat";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wide rounded-full border shrink-0",
+        isStat
+          ? "bg-rose-50 text-rose-700 border-rose-200"
+          : "bg-amber-50 text-amber-700 border-amber-200",
+      )}
+    >
+      <AlertTriangle className="w-2.5 h-2.5" />
+      {isStat ? "STAT" : "Urgent"}
+    </span>
+  );
+};
+
+const getTypeIcon = (type: string) => {
+  const map: Record<string, any> = {
+    "pharmacy-restock": Package,
+    clinical: User,
+    lab: FlaskConical,
+    "ward-supply": Syringe,
+  };
+  return map[type] || ClipboardList;
+};
+
+// ─── Action Modal (bottom sheet on mobile) ──────────────────────────
+
 function ActionModal({
   isOpen,
   onClose,
@@ -84,7 +169,7 @@ function ActionModal({
   title: string;
   description: string;
   confirmLabel: string;
-  confirmColor?: "emerald" | "rose" | "blue";
+  confirmColor?: "emerald" | "rose" | "slate";
   showComment?: boolean;
   comment?: string;
   setComment?: (val: string) => void;
@@ -94,59 +179,77 @@ function ActionModal({
   if (!isOpen) return null;
 
   const colorClasses = {
-    emerald:
-      "bg-gradient-to-r from-emerald-600 to-teal-600 hover:shadow-lg hover:shadow-emerald-600/25 active:scale-[0.98] focus:ring-emerald-500",
-    rose: "bg-gradient-to-r from-rose-600 to-red-600 hover:shadow-lg hover:shadow-rose-600/25 active:scale-[0.98] focus:ring-rose-500",
-    blue: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-600/25 active:scale-[0.98] focus:ring-blue-500",
+    emerald: "bg-emerald-600 hover:bg-emerald-700",
+    rose: "bg-rose-600 hover:bg-rose-700",
+    slate: "bg-slate-800 hover:bg-slate-900",
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 16 }}
-        className="bg-white rounded-3xl max-w-md w-full shadow-2xl shadow-slate-900/10 border border-slate-200/80 p-6 md:p-8 space-y-6"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 240 }}
+        className="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="space-y-1.5">
+        {/* Handle bar for mobile */}
+        <div className="sm:hidden pt-2 pb-1 flex justify-center">
+          <div className="w-10 h-1 bg-slate-200 rounded-full" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100">
           <h3
             className={cn(
-              "text-2xl text-slate-900 tracking-tight font-normal",
+              "text-base sm:text-lg font-bold text-slate-900 truncate",
               bebasNeue.className,
             )}
           >
             {title}
           </h3>
-          <p className="text-sm font-normal text-slate-600 leading-relaxed">
-            {description}
-          </p>
-        </div>
-
-        {children}
-
-        {showComment && (
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-700 tracking-wide uppercase">
-              Reason{" "}
-              <span className="text-slate-400 font-normal lowercase">
-                (optional)
-              </span>
-            </label>
-            <textarea
-              value={comment || ""}
-              onChange={(e) => setComment && setComment(e.target.value)}
-              rows={3}
-              placeholder="Provide additional details or context..."
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 outline-none transition-all shadow-sm"
-            />
-          </div>
-        )}
-
-        <div className="flex items-center justify-end gap-3 pt-2">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-2xl transition-all border border-slate-200/60 shadow-sm focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
             disabled={loading}
+            className="p-1.5 -m-1 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4 text-slate-500" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+          <p className="text-[11px] sm:text-xs text-slate-500">{description}</p>
+
+          {children}
+
+          {showComment && (
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                Reason (optional)
+              </label>
+              <textarea
+                value={comment || ""}
+                onChange={(e) => setComment && setComment(e.target.value)}
+                rows={3}
+                placeholder="Provide additional details…"
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 resize-none outline-none transition"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-100 p-4 sm:p-5 flex flex-col-reverse sm:flex-row gap-2">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="w-full sm:flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wide transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -154,14 +257,11 @@ function ActionModal({
             onClick={onConfirm}
             disabled={loading}
             className={cn(
-              "px-5 py-2.5 text-sm font-semibold text-white rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 focus:ring-2 focus:ring-offset-2",
+              "w-full sm:flex-1 py-2.5 text-white rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50",
               colorClasses[confirmColor],
-              loading && "opacity-70 cursor-not-allowed shadow-none scale-100",
             )}
           >
-            {loading && (
-              <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
-            )}
+            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             {confirmLabel}
           </button>
         </div>
@@ -170,7 +270,8 @@ function ActionModal({
   );
 }
 
-// ─── Requisition Detail Modal (unchanged) ─────────────────────────
+// ─── Detail Modal (bottom sheet on mobile) ──────────────────────────
+
 function RequisitionDetailModal({
   requisition,
   onClose,
@@ -178,81 +279,11 @@ function RequisitionDetailModal({
   requisition: Requisition;
   onClose: () => void;
 }) {
-  const formatDate = (iso: string) => {
-    return new Date(iso).toLocaleString(undefined, {
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleString(undefined, {
       dateStyle: "medium",
       timeStyle: "short",
     });
-  };
-
-  const getPriorityBadge = (priority: string) => {
-    if (priority === "stat")
-      return (
-        <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 text-xs font-semibold px-3 py-1 rounded-full border border-rose-200/80 shadow-sm">
-          <AlertTriangle className="w-3.5 h-3.5" /> STAT
-        </span>
-      );
-    if (priority === "urgent")
-      return (
-        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-xs font-semibold px-3 py-1 rounded-full border border-amber-200/80 shadow-sm">
-          <AlertTriangle className="w-3.5 h-3.5" /> Urgent
-        </span>
-      );
-    return (
-      <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1 rounded-full border border-slate-200">
-        Normal
-      </span>
-    );
-  };
-
-  const getStatusBadge = (status: string) => {
-    const map: Record<
-      string,
-      { label: string; color: string; border: string }
-    > = {
-      pending: {
-        label: "Pending",
-        color: "bg-amber-50 text-amber-700",
-        border: "border-amber-200/80",
-      },
-      approved: {
-        label: "Approved",
-        color: "bg-emerald-50 text-emerald-700",
-        border: "border-emerald-200/80",
-      },
-      rejected: {
-        label: "Rejected",
-        color: "bg-rose-50 text-rose-700",
-        border: "border-rose-200/80",
-      },
-      fulfilled: {
-        label: "Fulfilled",
-        color: "bg-blue-50 text-blue-700",
-        border: "border-blue-200/80",
-      },
-      draft: {
-        label: "Draft",
-        color: "bg-slate-100 text-slate-700",
-        border: "border-slate-200",
-      },
-    };
-    const config = map[status] || {
-      label: status,
-      color: "bg-slate-100 text-slate-700",
-      border: "border-slate-200",
-    };
-    return (
-      <span
-        className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm border",
-          config.color,
-          config.border,
-        )}
-      >
-        {config.label}
-      </span>
-    );
-  };
 
   const getActionLabel = (action: string) => {
     const map: Record<string, string> = {
@@ -265,29 +296,37 @@ function RequisitionDetailModal({
     return map[action] || action.charAt(0).toUpperCase() + action.slice(1);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 print:bg-white print:backdrop-blur-none"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 16 }}
-        className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-slate-900/10 border border-slate-200/80 print:shadow-none print:border-none print:max-h-none print:w-full print:rounded-none"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 240 }}
+        className="bg-white rounded-t-3xl sm:rounded-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl print:shadow-none print:border-none print:rounded-none print:max-h-none"
+        onClick={(e) => e.stopPropagation()}
       >
+        {/* Handle bar */}
+        <div className="sm:hidden pt-2 pb-1 flex justify-center print:hidden">
+          <div className="w-10 h-1 bg-slate-200 rounded-full" />
+        </div>
+
         {/* Header */}
-        <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 md:px-8 py-5 flex justify-between items-center rounded-t-3xl z-20 print:bg-white print:border-b">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                Details view
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100 print:bg-white">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                Details
               </span>
             </div>
             <h2
               className={cn(
-                "text-2xl md:text-3xl text-slate-900 tracking-tight font-normal",
+                "text-base sm:text-lg font-bold text-slate-900 truncate",
                 bebasNeue.className,
               )}
             >
@@ -297,81 +336,83 @@ function RequisitionDetailModal({
                 : "Details"}
             </h2>
           </div>
-          <div className="flex items-center gap-2.5 print:hidden">
+          <div className="flex items-center gap-1 shrink-0 print:hidden">
             <button
               onClick={handlePrint}
-              className="p-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
+              className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
               aria-label="Print"
-              title="Print Requisition"
             >
               <Printer className="w-4 h-4 text-slate-600" />
             </button>
             <button
               onClick={onClose}
-              className="p-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
+              className="p-1.5 -m-1 hover:bg-slate-100 rounded-lg transition-colors"
               aria-label="Close"
-              title="Close Modal"
             >
-              <X className="w-4 h-4 text-slate-600" />
+              <X className="w-4 h-4 text-slate-500" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="p-6 md:p-8 space-y-8">
-          {/* Requisition Summary Card Grid */}
-          <div className="bg-slate-50/70 p-5 md:p-6 rounded-3xl border border-slate-200/60 grid grid-cols-2 sm:grid-cols-4 gap-6">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          {/* Summary grid */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-0.5">
                 Requester
               </p>
-              <p className="font-semibold text-slate-900 text-sm">
+              <p className="text-xs font-bold text-slate-900 truncate">
                 {requisition.requesterName}
               </p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+            <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-0.5">
                 Type
               </p>
-              <p className="font-semibold text-slate-900 text-sm capitalize">
+              <p className="text-xs font-bold text-slate-900 capitalize truncate">
                 {requisition.type.replace("-", " ")}
               </p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+            <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">
                 Priority
               </p>
-              <div>{getPriorityBadge(requisition.priority)}</div>
+              {requisition.priority === "urgent" ||
+              requisition.priority === "stat" ? (
+                <PriorityBadge priority={requisition.priority} />
+              ) : (
+                <span className="text-xs font-bold text-slate-700">Normal</span>
+              )}
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+            <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">
                 Status
               </p>
-              <div>{getStatusBadge(requisition.status)}</div>
+              <StatusBadge status={requisition.status} />
             </div>
-            <div className="col-span-2 space-y-1">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                Created Date & Time
+            <div className="col-span-2 bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-0.5">
+                Created
               </p>
-              <p className="text-sm font-medium text-slate-700">
+              <p className="text-xs text-slate-700 tabular-nums">
                 {formatDate(requisition.createdAt)}
               </p>
             </div>
-            <div className="col-span-2 space-y-1">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+            <div className="col-span-2 bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-0.5">
                 Assigned To
               </p>
-              <p className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                <User className="w-4 h-4 text-slate-400" />
+              <p className="text-xs font-bold text-slate-900 truncate">
                 {requisition.assignedToName || "Not assigned"}
               </p>
             </div>
             {requisition.clinicalNotes && (
-              <div className="col-span-full space-y-1 pt-2 border-t border-slate-200/60">
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+              <div className="col-span-2">
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">
                   Clinical Notes
                 </p>
-                <p className="text-sm text-slate-700 bg-white p-3.5 rounded-2xl border border-slate-200/60 shadow-sm leading-relaxed">
+                <p className="text-[11px] text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200 leading-relaxed">
                   {requisition.clinicalNotes}
                 </p>
               </div>
@@ -380,30 +421,32 @@ function RequisitionDetailModal({
 
           {/* Items */}
           {requisition.items && requisition.items.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <ClipboardList className="w-4 h-4 text-emerald-600" />
-                Requested Items ({requisition.items.length})
-              </h3>
-              <div className="bg-white rounded-3xl border border-slate-200/60 overflow-hidden shadow-sm divide-y divide-slate-100">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
+                  Items
+                </p>
+                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full tabular-nums">
+                  {requisition.items.length}
+                </span>
+              </div>
+              <div className="bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">
                 {requisition.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-4 md:px-6 flex justify-between items-center hover:bg-slate-50/50 transition-colors"
+                    className="p-2.5 flex justify-between items-start gap-2"
                   >
-                    <div className="space-y-0.5">
-                      <p className="font-semibold text-slate-900 text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-900 truncate">
                         {item.name}
                       </p>
-                      <p className="text-xs text-slate-500">
-                        {item.strength}{" "}
-                        <span className="text-slate-300">•</span> {item.form}{" "}
-                        <span className="text-slate-300">•</span> {item.unit}
+                      <p className="text-[9px] text-slate-500 truncate">
+                        {item.strength} · {item.form} · {item.unit}
                       </p>
                     </div>
-                    <div className="bg-slate-100 text-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold shadow-inner">
+                    <p className="text-xs font-bold text-slate-800 tabular-nums shrink-0">
                       ×{item.quantity}
-                    </div>
+                    </p>
                   </div>
                 ))}
               </div>
@@ -411,63 +454,66 @@ function RequisitionDetailModal({
           )}
 
           {/* Approval Chain */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-emerald-600" />
-              Approval Chain History
-            </h3>
-            <div className="relative pl-6 border-l-2 border-emerald-500/30 space-y-6 ml-2">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+                <UserCheck className="w-3 h-3" />
+                Approval Chain
+              </h3>
+              {requisition.approvalHistory && (
+                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full tabular-nums">
+                  {requisition.approvalHistory.length}
+                </span>
+              )}
+            </div>
+            <div className="relative pl-5 border-l-2 border-emerald-200 space-y-2.5">
               {requisition.approvalHistory &&
               requisition.approvalHistory.length > 0 ? (
                 requisition.approvalHistory.map((entry, index) => (
-                  <div key={index} className="relative group">
-                    <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 border-emerald-600 bg-white shadow-sm ring-4 ring-emerald-50" />
-                    <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm space-y-2.5 transition-all hover:border-slate-300">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 text-sm">
-                              {getActionLabel(entry.action)}
-                            </span>
-                            <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-medium border border-slate-200/60">
-                              {entry.role}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500">
-                            Action completed by{" "}
-                            <span className="font-semibold text-slate-800">
-                              {entry.userName || entry.userId}
-                            </span>
+                  <div key={index} className="relative">
+                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-emerald-500 bg-white" />
+                    <div className="bg-white rounded-xl p-2.5 border border-slate-200">
+                      <div className="flex items-start justify-between gap-2 mb-0.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {getActionLabel(entry.action)}
                           </p>
-                          {entry.comment && (
-                            <div className="mt-2.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200/60 flex items-start gap-2 shadow-inner">
-                              <MessageSquare className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
-                              <span className="italic leading-relaxed">
-                                "{entry.comment}"
-                              </span>
-                            </div>
-                          )}
+                          <span className="text-[9px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded-full shrink-0">
+                            {entry.role}
+                          </span>
                         </div>
-                        <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/60 whitespace-nowrap">
-                          <Calendar className="w-3 h-3 text-slate-400" />
+                        <span className="text-[9px] text-slate-400 flex items-center gap-1 tabular-nums shrink-0">
+                          <Calendar className="w-2.5 h-2.5" />
                           {formatDate(entry.timestamp)}
-                        </div>
+                        </span>
                       </div>
+                      <p className="text-[10px] text-slate-600">
+                        by{" "}
+                        <span className="font-semibold text-slate-800">
+                          {entry.userName || entry.userId}
+                        </span>
+                      </p>
+                      {entry.comment && (
+                        <p className="text-[10px] text-slate-700 mt-1.5 flex items-start gap-1.5 bg-slate-50 p-2 rounded-lg">
+                          <MessageSquare className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
+                          <span className="italic">"{entry.comment}"</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200/60 text-center text-sm text-slate-500">
-                  No approval history records available yet.
-                </div>
+                <p className="text-[11px] text-slate-500">
+                  No approval history yet.
+                </p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Footer (print only) */}
-        <div className="hidden print:block text-xs text-slate-400 text-center py-6 border-t border-slate-200 mt-6">
-          Printed securely from Doza Center Dashboard
+        {/* Print footer */}
+        <div className="hidden print:block text-[10px] text-slate-400 text-center py-3 border-t border-slate-200">
+          Printed from Doza Center Dashboard
         </div>
       </motion.div>
     </div>
@@ -475,6 +521,7 @@ function RequisitionDetailModal({
 }
 
 // ─── Main Component ──────────────────────────────────────────────────
+
 export default function HospitalRequisitionPanel() {
   const { center, user } = useDashboard();
   const {
@@ -489,7 +536,6 @@ export default function HospitalRequisitionPanel() {
     escalate,
   } = useRequisitions(center?.id);
 
-  // ── UI state ──
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"all" | "my" | "assigned">("all");
@@ -498,7 +544,6 @@ export default function HospitalRequisitionPanel() {
     useState<Requisition | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // ── Action modals state ──
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showEscalateModal, setShowEscalateModal] = useState(false);
@@ -507,7 +552,6 @@ export default function HospitalRequisitionPanel() {
   const [escalateComment, setEscalateComment] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  // ── Escalation staff selection ──
   const [staffList, setStaffList] = useState<any[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [escalateSearch, setEscalateSearch] = useState("");
@@ -516,7 +560,6 @@ export default function HospitalRequisitionPanel() {
   >(null);
   const [isEscalateDropdownOpen, setIsEscalateDropdownOpen] = useState(false);
 
-  // Fetch staff when escalate modal opens
   useEffect(() => {
     if (showEscalateModal && center?.id) {
       const fetchStaff = async () => {
@@ -559,6 +602,15 @@ export default function HospitalRequisitionPanel() {
     return { total, pending, approved, fulfilled, rejected };
   }, [requisitions]);
 
+  const myCount = useMemo(
+    () => requisitions.filter((r) => r.requesterId === user?.id).length,
+    [requisitions, user?.id],
+  );
+  const assignedCount = useMemo(
+    () => requisitions.filter((r) => r.assignedToUserId === user?.id).length,
+    [requisitions, user?.id],
+  );
+
   // ── Filtered list ──
   const filtered = useMemo(() => {
     let items = requisitions;
@@ -568,7 +620,6 @@ export default function HospitalRequisitionPanel() {
     } else if (viewMode === "assigned") {
       items = items.filter((r) => r.assignedToUserId === user?.id);
     }
-    // "all" shows everything the API returned
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -590,67 +641,7 @@ export default function HospitalRequisitionPanel() {
     );
   }, [requisitions, viewMode, searchTerm, statusFilter, user?.id]);
 
-  // ── Helpers ──
-  const getStatusConfig = (status: string) => {
-    const map: Record<string, any> = {
-      pending: {
-        label: "Pending",
-        icon: Clock,
-        bg: "bg-amber-100",
-        text: "text-amber-800",
-        border: "border-amber-200",
-      },
-      approved: {
-        label: "Approved",
-        icon: CheckCircle,
-        bg: "bg-blue-100",
-        text: "text-blue-800",
-        border: "border-blue-200",
-      },
-      fulfilled: {
-        label: "Fulfilled",
-        icon: CheckCircle,
-        bg: "bg-emerald-100",
-        text: "text-emerald-800",
-        border: "border-emerald-200",
-      },
-      rejected: {
-        label: "Rejected",
-        icon: XCircle,
-        bg: "bg-rose-100",
-        text: "text-rose-800",
-        border: "border-rose-200",
-      },
-      draft: {
-        label: "Draft",
-        icon: AlertTriangle,
-        bg: "bg-slate-100",
-        text: "text-slate-700",
-        border: "border-slate-200",
-      },
-    };
-    return (
-      map[status] || {
-        label: status,
-        icon: AlertTriangle,
-        bg: "bg-slate-100",
-        text: "text-slate-700",
-        border: "border-slate-200",
-      }
-    );
-  };
-
-  const getTypeIcon = (type: string) => {
-    const map: Record<string, any> = {
-      "pharmacy-restock": Package,
-      clinical: User,
-      lab: FlaskConical,
-      "ward-supply": Syringe,
-    };
-    return map[type] || ClipboardList;
-  };
-
-  // ── Action handlers ──
+  // ── Handlers ──
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this requisition?")) return;
     await deleteRequisition(id);
@@ -737,17 +728,19 @@ export default function HospitalRequisitionPanel() {
     }
   };
 
-  // ── Render ──
   if (loading) return <RequisitionSkeleton />;
+
   if (error) {
     return (
-      <div className="p-8 text-center text-rose-600">
-        <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
-        <p className="font-semibold">Failed to load requisitions</p>
-        <p className="text-sm">{error}</p>
+      <div className="pb-24 pt-6 px-4 text-center">
+        <AlertTriangle className="w-10 h-10 text-rose-500 mx-auto mb-3" />
+        <p className="font-bold text-rose-700 text-sm">
+          Failed to load requisitions
+        </p>
+        <p className="text-xs text-slate-500 mt-1">{error}</p>
         <button
           onClick={refetch}
-          className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+          className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-emerald-700 transition-colors"
         >
           Retry
         </button>
@@ -755,368 +748,388 @@ export default function HospitalRequisitionPanel() {
     );
   }
 
+  const viewTabs = [
+    {
+      value: "all" as const,
+      label: "All",
+      count: stats.total,
+      icon: ClipboardList,
+    },
+    { value: "my" as const, label: "Mine", count: myCount, icon: Send },
+    {
+      value: "assigned" as const,
+      label: "Assigned",
+      count: assignedCount,
+      icon: Inbox,
+    },
+  ];
+
+  const statusTabs = [
+    { value: "all", label: "All", count: stats.total },
+    { value: "pending", label: "Pending", count: stats.pending },
+    { value: "approved", label: "Approved", count: stats.approved },
+    { value: "fulfilled", label: "Fulfilled", count: stats.fulfilled },
+    { value: "rejected", label: "Rejected", count: stats.rejected },
+  ];
+
   return (
     <div
       className={cn(
-        "min-h-screen bg-slate-50/60 pb-28 pt-8 md:pt-12 text-slate-900 selection:bg-emerald-500 selection:text-white",
+        "pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto selection:bg-emerald-500 selection:text-white",
         poppins.className,
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10">
-        {/* Header - Clean, Borderless & Spacious */}
-        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pb-2 border-b border-slate-200/60">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-8 w-1 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
-              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.25em]">
-                Requisitions Management
+      {/* ─── Compact header ─────────────────────────────────── */}
+      <header className="mb-3 md:mb-5">
+        {/* Row 1: eyebrow + count + actions */}
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 uppercase tracking-[0.15em] truncate">
+              Requisitions
+            </span>
+            <span className="text-[9px] md:text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
+              {stats.total}
+            </span>
+            {stats.pending > 0 && (
+              <span className="text-[9px] md:text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
+                {stats.pending} pending
               </span>
-              <span className="text-xs font-semibold text-slate-500 bg-slate-200/50 px-3 py-1 rounded-full">
-                {requisitions.length} total
-              </span>
-            </div>
-            <h1
-              className={cn(
-                "text-4xl sm:text-5xl lg:text-6xl text-slate-900 tracking-tight font-normal leading-[1.05]",
-                bebasNeue.className,
-              )}
-            >
-              {viewMode === "my"
-                ? "My Requests"
-                : viewMode === "assigned"
-                  ? "Assigned to Me"
-                  : "All Requests"}
-            </h1>
-            <p className="text-sm sm:text-base font-normal text-slate-600 max-w-2xl leading-relaxed">
-              {viewMode === "my"
-                ? "Manage and track the progress of requisitions you have created."
-                : viewMode === "assigned"
-                  ? "Review and take action on requisitions assigned to you."
-                  : "Comprehensive overview of all your requisitions and those assigned to you."}
-            </p>
+            )}
           </div>
-
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={refetch}
-              className="p-3.5 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm group focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-              title="Refresh"
+              className="p-1.5 md:p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+              aria-label="Refresh"
             >
-              <RefreshCw className="w-4 h-4 text-slate-600 group-hover:rotate-180 transition-transform duration-500" />
+              <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
             </button>
             <button
               onClick={() => setModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-2xl shadow-lg shadow-emerald-600/25 active:scale-[0.98] transition-all flex items-center gap-2.5 text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+              className="flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all text-[11px] md:text-xs font-bold uppercase tracking-wide shadow-sm"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" /> New Request
+              <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">New</span>
             </button>
           </div>
-        </header>
+        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <StatCard label="Total" value={stats.total} icon={ClipboardList} />
-          <StatCard label="Pending" value={stats.pending} icon={Clock} />
-          <StatCard
+        {/* Row 2: title */}
+        <h1
+          className={cn(
+            "text-2xl md:text-4xl text-slate-900 leading-none tracking-tight mb-1",
+            bebasNeue.className,
+          )}
+        >
+          {viewMode === "my"
+            ? "My Requests"
+            : viewMode === "assigned"
+              ? "Assigned to Me"
+              : "All Requests"}
+        </h1>
+        <p className="text-[11px] md:text-xs text-slate-500">
+          {viewMode === "my"
+            ? "Track the progress of requisitions you created"
+            : viewMode === "assigned"
+              ? "Review and act on requisitions assigned to you"
+              : "Overview of all requisitions"}
+        </p>
+
+        {/* Row 3: stat pills — horizontal scroll */}
+        <div className="-mx-3 px-3 md:mx-0 md:px-0 mt-3 md:mt-4 flex md:grid md:grid-cols-5 gap-2 md:gap-2.5 overflow-x-auto md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 md:pb-0">
+          <StatPill
+            label="Total"
+            value={stats.total}
+            tone="slate"
+            icon={ClipboardList}
+          />
+          <StatPill
+            label="Pending"
+            value={stats.pending}
+            tone="amber"
+            icon={Clock}
+          />
+          <StatPill
             label="Approved"
             value={stats.approved}
+            tone="emerald"
             icon={CheckCircle}
           />
-          <StatCard
+          <StatPill
             label="Fulfilled"
             value={stats.fulfilled}
+            tone="emerald"
             icon={CheckCircle}
           />
-          <StatCard label="Rejected" value={stats.rejected} icon={XCircle} />
+          <StatPill
+            label="Rejected"
+            value={stats.rejected}
+            tone="rose"
+            icon={XCircle}
+          />
+        </div>
+      </header>
+
+      {/* ─── Search ─────────────────────────────────────────── */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search by item, requester, or assignee…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-9 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs md:text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none shadow-sm transition-all"
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded-full transition-colors"
+            aria-label="Clear search"
+          >
+            <X className="w-3.5 h-3.5 text-slate-400" />
+          </button>
+        )}
+      </div>
+
+      {/* ─── View tabs + Status chips ─────────────────────────── */}
+      <div className="mb-3 space-y-2">
+        {/* View tabs */}
+        <div className="-mx-3 px-3 md:mx-0 md:px-0 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+          {viewTabs.map((tab) => {
+            const isActive = viewMode === tab.value;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setViewMode(tab.value)}
+                className={cn(
+                  "shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-bold uppercase tracking-wide transition-all whitespace-nowrap",
+                  isActive
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
+                )}
+              >
+                <Icon className="w-3 h-3" />
+                {tab.label}
+                <span
+                  className={cn(
+                    "text-[9px] md:text-[10px] font-semibold tabular-nums",
+                    isActive ? "text-emerald-100" : "text-slate-400",
+                  )}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* View Tabs & Search Filters Wrapper */}
-        <div className="bg-white p-5 sm:p-7 rounded-[2rem] border border-slate-200/85 shadow-xl shadow-slate-950/[0.02] space-y-6">
-          {/* View Tabs */}
-          <div className="flex flex-wrap gap-2.5 pb-6 border-b border-slate-100">
-            <button
-              onClick={() => setViewMode("all")}
-              className={cn(
-                "px-4.5 py-3 rounded-2xl text-sm font-medium transition-all flex items-center gap-2.5",
-                viewMode === "all"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 font-semibold"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100/80 border border-slate-200/70",
-              )}
-            >
-              <ClipboardList className="w-4 h-4" />
-              All
-              <span
+        {/* Status chips */}
+        <div className="-mx-3 px-3 md:mx-0 md:px-0 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+          {statusTabs.map((tab) => {
+            const isActive = statusFilter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
                 className={cn(
-                  "text-xs rounded-full px-2 py-0.5",
-                  viewMode === "all"
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200/70 text-slate-600",
+                  "shrink-0 px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg text-[10px] md:text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border",
+                  isActive
+                    ? "bg-slate-800 text-white border-slate-800"
+                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
                 )}
               >
-                {requisitions.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setViewMode("my")}
-              className={cn(
-                "px-4.5 py-3 rounded-2xl text-sm font-medium transition-all flex items-center gap-2.5",
-                viewMode === "my"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 font-semibold"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100/80 border border-slate-200/70",
-              )}
-            >
-              <Send className="w-4 h-4" />
-              My Requests
-              <span
-                className={cn(
-                  "text-xs rounded-full px-2 py-0.5",
-                  viewMode === "my"
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200/70 text-slate-600",
-                )}
-              >
-                {requisitions.filter((r) => r.requesterId === user?.id).length}
-              </span>
-            </button>
-            <button
-              onClick={() => setViewMode("assigned")}
-              className={cn(
-                "px-4.5 py-3 rounded-2xl text-sm font-medium transition-all flex items-center gap-2.5",
-                viewMode === "assigned"
-                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 font-semibold"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100/80 border border-slate-200/70",
-              )}
-            >
-              <Inbox className="w-4 h-4" />
-              Assigned to Me
-              <span
-                className={cn(
-                  "text-xs rounded-full px-2 py-0.5",
-                  viewMode === "assigned"
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200/70 text-slate-600",
-                )}
-              >
-                {
-                  requisitions.filter((r) => r.assignedToUserId === user?.id)
-                    .length
-                }
-              </span>
-            </button>
-          </div>
-
-          {/* Search & Status Filters */}
-          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
-            <div className="relative flex-1 w-full lg:max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by item, requester, or assignee..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-slate-50/70 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all shadow-inner"
-              />
-            </div>
-            <div className="flex gap-2 flex-wrap items-center">
-              {["all", "pending", "approved", "fulfilled", "rejected"].map(
-                (status) => (
-                  <button
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={cn(
-                      "px-4 py-2.5 rounded-xl text-xs font-semibold transition-all border focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2",
-                      statusFilter === status
-                        ? "bg-slate-900 text-white border-slate-900 shadow-md shadow-slate-950/10"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300",
-                    )}
-                  >
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </button>
-                ),
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* List Section */}
-        <div className="bg-white rounded-[2rem] border border-slate-200/85 shadow-xl shadow-slate-950/[0.02] overflow-hidden">
-          {filtered.length === 0 ? (
-            <div className="p-16 sm:p-24 text-center text-slate-500">
-              <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-5 text-emerald-600 shadow-sm">
-                <ClipboardList className="w-9 h-9 stroke-[1.8]" />
-              </div>
-              <p className="font-bold text-lg text-slate-800 tracking-tight">
-                No requisitions found
-              </p>
-              <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
-                {searchTerm || statusFilter !== "all"
-                  ? "Try adjusting your filters or search terms to find what you're looking for."
-                  : viewMode === "my"
-                    ? "You haven't created any requests yet."
-                    : viewMode === "assigned"
-                      ? "No requests have been assigned to you."
-                      : "No requests available at the moment."}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {filtered.map((req) => {
-                const config = getStatusConfig(req.status);
-                const Icon = config.icon;
-                const TypeIcon = getTypeIcon(req.type);
-                const isPending = req.status === "pending";
-                const isEditable = isPending && req.requesterId === user?.id;
-                const isAssignedToMe = req.assignedToUserId === user?.id;
-                const showActions =
-                  isPending &&
-                  (req.assignedToUserId === user?.id ||
-                    req.approverRole === String(user?.role) ||
-                    ["admin", "center_owner"].includes(String(user?.role)));
-
-                return (
-                  <motion.div
-                    key={req.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-5 sm:p-7 hover:bg-emerald-50/[0.15] transition-all group"
-                  >
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={cn(
-                            "p-3.5 rounded-2xl border shadow-sm transition-transform group-hover:scale-105 shrink-0",
-                            config.bg,
-                            config.text,
-                            config.border,
-                          )}
-                        >
-                          <TypeIcon className="w-5 h-5 stroke-[2.2]" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2.5">
-                            <h3 className="font-bold text-base text-slate-900 tracking-tight">
-                              {req.requesterName}
-                            </h3>
-                            <span className="text-xs font-medium text-slate-300">
-                              •
-                            </span>
-                            <span className="text-xs font-medium text-slate-500">
-                              {new Date(req.createdAt).toLocaleDateString()}
-                            </span>
-                            {req.priority === "urgent" && (
-                              <span className="inline-flex items-center gap-1 text-amber-700 text-xs font-semibold bg-amber-50 px-3 py-0.5 rounded-full border border-amber-200/80 shadow-sm">
-                                <AlertTriangle className="w-3 h-3 stroke-[2.2]" />
-                                Urgent
-                              </span>
-                            )}
-                            {req.priority === "stat" && (
-                              <span className="inline-flex items-center gap-1 text-rose-700 text-xs font-semibold bg-rose-50 px-3 py-0.5 rounded-full border border-rose-200/80 shadow-sm">
-                                <AlertTriangle className="w-3 h-3 stroke-[2.2]" />
-                                STAT
-                              </span>
-                            )}
-                            {req.assignedToUserId && (
-                              <span className="text-xs font-semibold bg-blue-50/80 text-blue-700 px-3 py-0.5 rounded-full border border-blue-200/80 flex items-center gap-1.5 shadow-sm">
-                                <User className="w-3 h-3 stroke-[2.2]" />
-                                {isAssignedToMe
-                                  ? "Assigned to You"
-                                  : req.assignedToName || "Assigned"}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium text-slate-600 capitalize">
-                            {req.items.length} item(s){" "}
-                            <span className="text-slate-300">•</span>{" "}
-                            {req.type.replace("-", " ")}
-                            {req.assignedToName && !isAssignedToMe && (
-                              <span className="ml-2 text-xs text-slate-400 font-normal">
-                                → Assigned to {req.assignedToName}
-                              </span>
-                            )}
-                          </p>
-                          {req.clinicalNotes && (
-                            <p className="text-xs text-slate-500 mt-2 line-clamp-1 bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-200/60">
-                              {req.clinicalNotes}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 flex-wrap pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                        <span
-                          className={cn(
-                            "px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 shadow-sm",
-                            config.bg,
-                            config.text,
-                            config.border,
-                          )}
-                        >
-                          <Icon className="w-3.5 h-3.5 stroke-[2.2]" />
-                          {config.label}
-                        </span>
-
-                        {showActions && (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleApproveClick(req.id)}
-                              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5 stroke-[2.2]" />{" "}
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleRejectClick(req.id)}
-                              className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-rose-600/20 flex items-center gap-1.5 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
-                            >
-                              <XCircle className="w-3.5 h-3.5 stroke-[2.2]" />{" "}
-                              Reject
-                            </button>
-                            <button
-                              onClick={() => handleEscalateClick(req.id)}
-                              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                            >
-                              <ArrowUp className="w-3.5 h-3.5 stroke-[2.2]" />{" "}
-                              Escalate
-                            </button>
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() => handleViewDetails(req)}
-                          className="p-2.5 bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 hover:border-slate-300 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
-                          title="View details & approval chain"
-                        >
-                          <Eye className="w-4 h-4 stroke-[2.2]" />
-                        </button>
-
-                        {isEditable && (
-                          <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
-                            <button
-                              className="p-2.5 bg-emerald-50 border border-emerald-200/60 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
-                              title="Edit"
-                            >
-                              <Eye className="w-4 h-4 stroke-[2.2]" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(req.id)}
-                              className="p-2.5 bg-rose-50 border border-rose-200/60 text-rose-600 hover:text-rose-800 hover:bg-rose-100 rounded-2xl transition-all shadow-sm focus:ring-2 focus:ring-emerald-500"
-                              title="Delete"
-                            >
-                              <XCircle className="w-4 h-4 stroke-[2.2]" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
+                {tab.label}
+                <span
+                  className={cn(
+                    "ml-1 text-[9px] font-semibold tabular-nums",
+                    isActive ? "text-slate-300" : "text-slate-400",
+                  )}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* ── Modals Section ── */}
+      {/* ─── List ────────────────────────────────────────────── */}
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-10 md:p-12 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-3">
+            <ClipboardList className="w-6 h-6 text-emerald-500" />
+          </div>
+          <h3
+            className={cn(
+              "text-base md:text-lg font-bold text-slate-800 mb-1",
+              bebasNeue.className,
+            )}
+          >
+            No requisitions found
+          </h3>
+          <p className="text-[11px] md:text-xs text-slate-500 max-w-sm mx-auto">
+            {searchTerm || statusFilter !== "all"
+              ? "Try adjusting your filters."
+              : viewMode === "my"
+                ? "You haven't created any requests yet."
+                : viewMode === "assigned"
+                  ? "No requests assigned to you."
+                  : "No requests available at the moment."}
+          </p>
+          {(searchTerm || statusFilter !== "all") && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setStatusFilter("all");
+              }}
+              className="mt-4 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:text-emerald-700 bg-slate-50 border border-slate-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-200 transition-all"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {filtered.map((req) => {
+            const statusStyle = getStatusStyle(req.status);
+            const TypeIcon = getTypeIcon(req.type);
+            const isPending = req.status === "pending";
+            const isEditable = isPending && req.requesterId === user?.id;
+            const isAssignedToMe = req.assignedToUserId === user?.id;
+            const showActions =
+              isPending &&
+              (req.assignedToUserId === user?.id ||
+                req.approverRole === String(user?.role) ||
+                ["admin", "center_owner"].includes(String(user?.role)));
+
+            return (
+              <motion.div
+                key={req.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl border border-slate-200 p-3 md:p-4 hover:border-emerald-200 transition-colors"
+              >
+                {/* Top row */}
+                <div className="flex items-start gap-2.5 mb-2">
+                  <div
+                    className={cn(
+                      "p-2 rounded-lg border shrink-0",
+                      statusStyle.bg,
+                    )}
+                  >
+                    <TypeIcon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-0.5">
+                      <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">
+                        {req.requesterName}
+                      </h3>
+                      <StatusBadge status={req.status} />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                      <PriorityBadge priority={req.priority} />
+                      {req.assignedToUserId && (
+                        <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded-full truncate max-w-[160px]">
+                          {isAssignedToMe
+                            ? "Assigned to You"
+                            : `→ ${req.assignedToName || "Assigned"}`}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2.5 text-[10px] md:text-[11px] text-slate-500">
+                      <span className="tabular-nums">
+                        {new Date(req.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                      <span className="text-slate-300">·</span>
+                      <span className="tabular-nums">
+                        {req.items.length} item
+                        {req.items.length === 1 ? "" : "s"}
+                      </span>
+                      <span className="text-slate-300">·</span>
+                      <span className="capitalize truncate">
+                        {req.type.replace("-", " ")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes preview */}
+                {req.clinicalNotes && (
+                  <p className="text-[10px] md:text-[11px] text-slate-500 leading-relaxed line-clamp-1 mb-2 pl-10">
+                    {req.clinicalNotes}
+                  </p>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-1.5 pt-2.5 border-t border-slate-100">
+                  {showActions ? (
+                    <>
+                      <button
+                        onClick={() => handleApproveClick(req.id)}
+                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wide rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                      >
+                        <CheckCircle className="w-3 h-3" />
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleRejectClick(req.id)}
+                        className="flex-1 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] md:text-[11px] font-bold uppercase tracking-wide rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <XCircle className="w-3 h-3" />
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => handleEscalateClick(req.id)}
+                        className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[10px] md:text-[11px] font-bold uppercase tracking-wide rounded-lg transition-colors flex items-center justify-center gap-1"
+                        aria-label="Escalate"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handleViewDetails(req)}
+                      className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] md:text-[11px] font-bold uppercase tracking-wide rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Eye className="w-3 h-3" />
+                      View details
+                    </button>
+                  )}
+
+                  {/* View button always present when actions shown */}
+                  {showActions && (
+                    <button
+                      onClick={() => handleViewDetails(req)}
+                      className="px-2.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg transition-colors shrink-0"
+                      aria-label="View details"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  {/* Delete for owner's own pending */}
+                  {isEditable && (
+                    <button
+                      onClick={() => handleDelete(req.id)}
+                      className="px-2.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg transition-colors shrink-0"
+                      aria-label="Delete"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ─── Modals ─────────────────────────────────────────── */}
       <RequisitionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -1127,15 +1140,17 @@ export default function HospitalRequisitionPanel() {
         }}
       />
 
-      {showDetailModal && selectedRequisition && (
-        <RequisitionDetailModal
-          requisition={selectedRequisition}
-          onClose={() => {
-            setShowDetailModal(false);
-            setSelectedRequisition(null);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showDetailModal && selectedRequisition && (
+          <RequisitionDetailModal
+            requisition={selectedRequisition}
+            onClose={() => {
+              setShowDetailModal(false);
+              setSelectedRequisition(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <ActionModal
         isOpen={showApproveModal}
@@ -1182,29 +1197,29 @@ export default function HospitalRequisitionPanel() {
         title="Escalate Requisition"
         description="Select the staff member to escalate this request to."
         confirmLabel="Escalate"
-        confirmColor="blue"
+        confirmColor="slate"
         showComment={true}
         comment={escalateComment}
         setComment={setEscalateComment}
         loading={actionLoading}
       >
-        <div className="mt-4 space-y-2">
-          <label className="block text-xs font-semibold text-slate-700 tracking-wide uppercase">
-            Select Staff *
+        <div>
+          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+            Select Staff <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
-            <div className="flex items-center border border-slate-200 bg-slate-50/70 rounded-2xl focus-within:ring-2 focus-within:ring-blue-500/25 focus-within:border-blue-600 transition-all">
-              <User className="w-4 h-4 text-slate-400 ml-3.5" />
+            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:ring-2 focus-within:ring-emerald-500/40 focus-within:border-emerald-500 transition">
+              <User className="w-3.5 h-3.5 text-slate-400 ml-3 shrink-0" />
               <input
                 type="text"
-                placeholder="Search staff..."
+                placeholder="Search staff…"
                 value={escalateSearch}
                 onChange={(e) => {
                   setEscalateSearch(e.target.value);
                   setIsEscalateDropdownOpen(true);
                 }}
                 onFocus={() => setIsEscalateDropdownOpen(true)}
-                className="flex-1 px-3 py-3 bg-transparent outline-none text-sm text-slate-900 placeholder:text-slate-400"
+                className="flex-1 px-3 py-2.5 bg-transparent outline-none text-xs sm:text-sm text-slate-900 placeholder:text-slate-400"
               />
               {escalateTargetUserId && (
                 <button
@@ -1213,22 +1228,23 @@ export default function HospitalRequisitionPanel() {
                     setEscalateTargetUserId(null);
                     setEscalateSearch("");
                   }}
-                  className="pr-3 text-slate-400 hover:text-slate-600"
+                  className="pr-3 text-slate-400 hover:text-slate-600 shrink-0"
+                  aria-label="Clear"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
             {isEscalateDropdownOpen && (
-              <div className="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl max-h-56 overflow-y-auto p-1.5">
+              <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
                 {loadingStaff ? (
-                  <div className="p-6 text-center text-sm text-slate-500 flex flex-col items-center justify-center">
-                    <Loader2 className="w-5 h-5 animate-spin text-blue-600 mb-2" />
-                    Loading staff members...
+                  <div className="p-4 text-center text-xs text-slate-500">
+                    <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1" />
+                    Loading…
                   </div>
                 ) : filteredEscalateStaff.length === 0 ? (
-                  <div className="p-6 text-center text-sm text-slate-500">
-                    No staff members found
+                  <div className="p-4 text-center text-xs text-slate-500">
+                    No staff found
                   </div>
                 ) : (
                   filteredEscalateStaff.map((staff) => {
@@ -1246,33 +1262,30 @@ export default function HospitalRequisitionPanel() {
                         onClick={() => {
                           setEscalateTargetUserId(staff.id);
                           setEscalateSearch(
-                            staff.personalInfo.fullName +
-                              " (" +
-                              staff.professional.role +
-                              ")",
+                            `${staff.personalInfo.fullName} (${staff.professional.role})`,
                           );
                           setIsEscalateDropdownOpen(false);
                         }}
-                        className="w-full text-left px-3 py-2.5 hover:bg-slate-50 rounded-xl transition-all flex items-center gap-3 border-b border-slate-50 last:border-0"
+                        className="w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2.5 border-b border-slate-100 last:border-0"
                       >
                         <div
                           className={cn(
-                            "w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm",
+                            "w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0",
                             color,
                           )}
                         >
                           {initials}
                         </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-slate-800">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-slate-800 truncate">
                             {staff.personalInfo.fullName}
                           </div>
-                          <div className="text-xs text-slate-500">
+                          <div className="text-[9px] text-slate-500 truncate">
                             {staff.professional.role}
                           </div>
                         </div>
                         {escalateTargetUserId === staff.id && (
-                          <Check className="w-4 h-4 text-blue-600 stroke-[2.5]" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         )}
                       </button>
                     );
@@ -1282,10 +1295,10 @@ export default function HospitalRequisitionPanel() {
             )}
           </div>
           {selectedEscalateStaff && (
-            <div className="mt-3 flex items-center gap-2.5 text-xs text-blue-800 bg-blue-50/80 p-3 rounded-2xl border border-blue-200/60 shadow-sm">
+            <div className="mt-2 flex items-center gap-2 text-[10px] text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
               <div
                 className={cn(
-                  "w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm",
+                  "w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0",
                   getAvatarColor(selectedEscalateStaff.personalInfo.fullName),
                 )}
               >
@@ -1296,12 +1309,11 @@ export default function HospitalRequisitionPanel() {
                   .toUpperCase()
                   .slice(0, 2)}
               </div>
-              <span>
+              <span className="truncate">
                 Escalating to{" "}
-                <strong className="font-semibold">
+                <strong className="font-bold">
                   {selectedEscalateStaff.personalInfo.fullName}
-                </strong>{" "}
-                ({selectedEscalateStaff.professional.role})
+                </strong>
               </span>
             </div>
           )}
@@ -1311,102 +1323,96 @@ export default function HospitalRequisitionPanel() {
   );
 }
 
-function StatCard({ label, value, icon: Icon }: any) {
+// ─── Stat Pill ──────────────────────────────────────────────────────
+
+function StatPill({
+  label,
+  value,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  tone: "emerald" | "slate" | "amber" | "rose";
+  icon: any;
+}) {
+  const toneStyles: Record<string, { bg: string; iconBg: string }> = {
+    emerald: {
+      bg: "bg-emerald-50 border-emerald-200 text-emerald-700",
+      iconBg: "bg-emerald-100 text-emerald-700",
+    },
+    slate: {
+      bg: "bg-slate-50 border-slate-200 text-slate-700",
+      iconBg: "bg-slate-100 text-slate-600",
+    },
+    amber: {
+      bg: "bg-amber-50 border-amber-200 text-amber-700",
+      iconBg: "bg-amber-100 text-amber-700",
+    },
+    rose: {
+      bg: "bg-rose-50 border-rose-200 text-rose-700",
+      iconBg: "bg-rose-100 text-rose-700",
+    },
+  };
+  const style = toneStyles[tone];
+
   return (
-    <div className="group relative overflow-hidden bg-white p-5 rounded-3xl border border-slate-200/80 hover:border-emerald-300 transition-all duration-300 shadow-xl shadow-slate-950/5 hover:shadow-2xl hover:-translate-y-0.5">
-      {/* Ambient decorative glow */}
-      <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-emerald-400/20" />
-
-      <div className="relative z-10 flex items-center justify-between gap-4">
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
-            {label}
-          </p>
-          <p
-            className={cn(
-              "text-3xl md:text-4xl font-normal tracking-tight leading-none text-slate-900",
-              bebasNeue.className,
-            )}
-          >
-            {value}
-          </p>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 transition-transform duration-300 group-hover:scale-110 shrink-0">
-          <Icon className="w-5 h-5 stroke-[2.2]" />
-        </div>
+    <div
+      className={cn(
+        "shrink-0 w-36 sm:w-44 md:w-auto flex items-center justify-between gap-2 px-3 py-2 rounded-xl border",
+        style.bg,
+      )}
+    >
+      <div className="min-w-0">
+        <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "text-lg md:text-xl font-bold tabular-nums leading-none mt-0.5",
+            bebasNeue.className,
+          )}
+        >
+          {value}
+        </p>
+      </div>
+      <div className={cn("p-1.5 rounded-lg shrink-0", style.iconBg)}>
+        <Icon className="w-3.5 h-3.5" />
       </div>
     </div>
   );
 }
 
+// ─── Skeleton ───────────────────────────────────────────────────────
+
 function RequisitionSkeleton() {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8">
-      <div className="max-w-7xl mx-auto px-4 space-y-6 animate-pulse">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-8 w-1 rounded-full bg-slate-200" />
-              <div className="h-4 w-32 bg-slate-200 rounded" />
-              <div className="h-5 w-16 bg-slate-200 rounded-full" />
-            </div>
-            <div className="h-10 w-48 bg-slate-200 rounded" />
-            <div className="h-5 w-64 bg-slate-100 rounded mt-2" />
-          </div>
-          <div className="flex gap-3">
-            <div className="w-10 h-10 bg-slate-200 rounded-xl" />
-            <div className="w-32 h-10 bg-slate-200 rounded-xl" />
-          </div>
+    <div className="pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto animate-pulse">
+      <div className="mb-3 md:mb-5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <div className="h-5 w-0.5 bg-slate-200 rounded-full" />
+          <div className="h-3 w-24 bg-slate-200 rounded" />
+          <div className="h-4 w-10 bg-slate-200 rounded-full" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-2xl p-4 border border-slate-200/80"
-            >
-              <div className="flex justify-between">
-                <div>
-                  <div className="h-3 w-10 bg-slate-200 rounded" />
-                  <div className="h-7 w-12 bg-slate-200 rounded mt-1" />
-                </div>
-                <div className="w-10 h-10 bg-slate-200 rounded-xl" />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2 border-b border-slate-200 pb-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-10 w-24 bg-slate-200 rounded-lg" />
-          ))}
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 h-11 bg-slate-200 rounded-xl" />
-          <div className="flex gap-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="w-16 h-8 bg-slate-200 rounded-lg" />
-            ))}
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="divide-y divide-slate-100">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="p-4 flex items-center gap-4">
-                <div className="w-12 h-12 bg-slate-200 rounded-xl" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-32 bg-slate-200 rounded" />
-                  <div className="h-3 w-48 bg-slate-100 rounded" />
-                </div>
-                <div className="flex gap-2">
-                  <div className="w-16 h-6 bg-slate-200 rounded-full" />
-                  <div className="w-16 h-6 bg-slate-200 rounded-full" />
-                  <div className="w-16 h-6 bg-slate-200 rounded-full" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className="h-7 w-48 bg-slate-200 rounded mb-1" />
+        <div className="h-3 w-56 bg-slate-100 rounded" />
+      </div>
+      <div className="flex gap-2.5 mb-3 md:mb-5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            className="h-16 w-36 bg-white rounded-xl border border-slate-200 shrink-0 md:flex-1"
+          />
+        ))}
+      </div>
+      <div className="h-10 bg-white rounded-xl border border-slate-200 mb-3" />
+      <div className="space-y-2.5">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="bg-white rounded-2xl border border-slate-200 p-3.5 h-32"
+          />
+        ))}
       </div>
     </div>
   );

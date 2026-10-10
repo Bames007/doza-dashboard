@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Loader2,
   CheckCircle,
+  ChevronLeft,
 } from "lucide-react";
 import { useDashboard } from "../DashboardContext";
 import { poppins, bebasNeue } from "@/app/utils/constants";
@@ -379,11 +380,6 @@ function usePatientTimeline(
       }
       if (!doctorName) {
         doctorName = "Doctor";
-        if (process.env.NODE_ENV === "development") {
-          console.warn(
-            `Test ${test.id} (${test.testType}) is missing orderedByName. Ordered by: ${test.orderedBy || "unknown"}`,
-          );
-        }
       }
 
       const eventTimestamp =
@@ -559,6 +555,13 @@ export default function PatientsPanel() {
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
     null,
   );
+
+  // ✅ Mobile master-detail view state
+  const [mobileView, setMobileView] = useState<"list" | "detail">("list");
+  const [mobileDetailTab, setMobileDetailTab] = useState<
+    "timeline" | "details"
+  >("timeline");
+  const touchStartX = useRef(0);
 
   const [showBillingModal, setShowBillingModal] = useState(false);
   const [selectedTimelineEvent, setSelectedTimelineEvent] =
@@ -851,7 +854,21 @@ export default function PatientsPanel() {
   const handleSelectPatient = (patientId: string) => {
     setSelectedPatientId(patientId);
     setSelectedTimelineEvent(null);
+    setMobileDetailTab("timeline");
+
+    // ✅ On mobile, transition to detail view
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setMobileView("detail");
+    }
+
     logAction("view", "patient", patientId, `Viewed patient`);
+  };
+
+  // ✅ Mobile back to list
+  const handleBackToList = () => {
+    setMobileView("list");
+    setSelectedTimelineEvent(null);
+    setMobileDetailTab("timeline");
   };
 
   const handleViewBillingDetails = () => setShowBillingModal(true);
@@ -873,7 +890,6 @@ export default function PatientsPanel() {
     }
 
     try {
-      // 1. Update patient status to discharged
       await updatePatient(selectedPatient.id, {
         status: "discharged",
         dischargeDate: new Date().toISOString(),
@@ -889,7 +905,6 @@ export default function PatientsPanel() {
         "Patient status updated to discharged",
       );
 
-      // 2. End the active session to create history entry
       try {
         const sessionRes = await fetch(
           `/api/centers/${center.id}/patients/${selectedPatient.id}/end-session`,
@@ -934,11 +949,9 @@ export default function PatientsPanel() {
         );
       }
 
-      // 3. Refresh data
       await refreshFullPatient();
       await refetchPatients();
 
-      // 4. Audit log
       logAction(
         "discharge",
         "patient",
@@ -947,13 +960,6 @@ export default function PatientsPanel() {
       );
 
       alert("Patient discharged successfully.");
-      logger.info(
-        {
-          patientId: selectedPatient.id,
-          dischargedBy: user?.fullName || "Unknown",
-        },
-        "Patient discharge completed",
-      );
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       logger.error(
@@ -1045,7 +1051,6 @@ export default function PatientsPanel() {
     }
   };
 
-  // ─── Take‑Home Medication Handler ────────────────────────────────
   const handleTakeHomeMedication = async (data: {
     medications: Array<{
       name: string;
@@ -1092,7 +1097,7 @@ export default function PatientsPanel() {
         "create",
         "prescription",
         selectedPatient!.id,
-        `Prescribed ${data.medications.length} take-home medication(s) (${data.medications.map((m) => m.source).join(", ")})`,
+        `Prescribed ${data.medications.length} take-home medication(s)`,
       );
       setShowTakeHomeModal(false);
       alert(`Take-home medication prescribed. Pharmacy will process and bill.`);
@@ -1326,7 +1331,6 @@ export default function PatientsPanel() {
     }
   };
 
-  // ─── End Session Handler (for centers without discharge) ──────────
   const handleEndSession = async () => {
     if (!selectedPatient || !center?.id) {
       logger.warn("No patient selected or center missing");
@@ -1348,7 +1352,6 @@ export default function PatientsPanel() {
       );
       const data = await res.json();
       if (data.success) {
-        // Update local patient state
         await updatePatient(selectedPatient.id, { status });
         await refetchPatients();
         await refreshFullPatient();
@@ -1356,7 +1359,6 @@ export default function PatientsPanel() {
           { patientId: selectedPatient.id, newStatus: status },
           "Visit ended successfully",
         );
-        // Optionally show a toast notification
       } else {
         alert(data.error || "Failed to end visit");
       }
@@ -1419,196 +1421,373 @@ export default function PatientsPanel() {
 
   // ─── Render ─────────────────────────────────────────────────────
   return (
-    <div
-      className={cn(
-        "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8",
-        poppins.className,
-      )}
-    >
-      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-6">
-        {/* ─── Header ────────────────────────────────────────────────── */}
-        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-8 w-1 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
-              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.25em]">
+    <div className={cn("min-h-screen bg-[#F8FAFC] pb-24", poppins.className)}>
+      <div className="max-w-7xl mx-auto px-3 md:px-6">
+        {/* ─── Compact mobile-aware header ─────────────────────────── */}
+        <header className="pt-3 md:pt-6 mb-3 md:mb-6">
+          {/* Row 1: eyebrow + refresh */}
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+              <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 uppercase tracking-[0.15em] truncate">
                 Patient Management
               </span>
-              <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                {patients.length} patients
+              <span className="text-[9px] md:text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
+                {patients.length}
               </span>
             </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-1.5 md:p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 shrink-0"
+              aria-label="Refresh"
+            >
+              {isRefreshing ? (
+                <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin text-emerald-600" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-600" />
+              )}
+            </button>
+          </div>
+
+          {/* Row 2: title + actions */}
+          <div className="flex items-end justify-between gap-2 mb-3 md:mb-4">
             <h1
               className={cn(
-                "text-4xl md:text-5xl lg:text-6xl text-slate-900 leading-[1.1] tracking-tight",
+                "text-2xl md:text-5xl text-slate-900 leading-none tracking-tight",
                 bebasNeue.className,
               )}
             >
               Patients
             </h1>
-            <p className="text-sm text-slate-700 mt-2 max-w-md">
-              Manage patient records, timelines, and clinical notes
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="p-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50 flex items-center justify-center focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-            >
-              {isRefreshing ? (
-                <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
-              ) : (
-                <RefreshCw className="w-5 h-5 text-slate-700" />
-              )}
-            </button>
             {permissions.canAddPatient && (
-              <>
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-emerald-200/50 transition-all flex items-center gap-2 text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Add Patient
-                </button>
+              <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                 <button
                   onClick={() => setShowDozaSearchModal(true)}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-blue-200/50 transition-all flex items-center gap-2 text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="flex items-center gap-1.5 px-2.5 md:px-4 py-2 md:py-2.5 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 transition-all text-[11px] md:text-sm font-semibold"
                 >
-                  <Users className="w-4 h-4" />
-                  From Doza
+                  <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  <span className="hidden sm:inline">From </span>Doza
                 </button>
-              </>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-[11px] md:text-sm font-semibold"
+                >
+                  <UserPlus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  Add
+                </button>
+              </div>
             )}
+          </div>
+
+          {/* Row 3: stats — horizontal scroll on mobile, grid on desktop */}
+          <div className="-mx-3 px-3 md:mx-0 md:px-0 flex md:grid md:grid-cols-5 gap-2 md:gap-3 overflow-x-auto md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {patientConfig.stats.total && (
+              <StatCard
+                label="Total"
+                value={patients.length}
+                icon={Users}
+                color="emerald"
+              />
+            )}
+            {patientConfig.stats.active && (
+              <StatCard
+                label="Active"
+                value={patients.filter((p) => p.status === "active").length}
+                icon={Activity}
+                color="blue"
+              />
+            )}
+            {patientConfig.stats.inpatient && (
+              <StatCard
+                label="Inpatients"
+                value={
+                  patients.filter((p) => p.patientType === "inpatient").length
+                }
+                icon={Bed}
+                color="purple"
+              />
+            )}
+            {patientConfig.stats.outpatient && (
+              <StatCard
+                label="Outpatients"
+                value={
+                  patients.filter((p) => p.patientType === "outpatient").length
+                }
+                icon={User}
+                color="rose"
+              />
+            )}
+            <StatCard
+              label="Discharged"
+              value={patients.filter((p) => p.status === "discharged").length}
+              icon={CheckCircle}
+              color="teal"
+            />
           </div>
         </header>
 
-        {/* ─── Stats Grid ──────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {patientConfig.stats.total && (
-            <StatCard
-              label="Total Patients"
-              value={patients.length}
-              icon={Users}
-              color="emerald"
+        {/* ─── Master-detail layout ─────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+          {/* Patient list — full width on mobile list view */}
+          <div
+            className={cn(
+              "lg:block",
+              mobileView === "list" ? "block" : "hidden",
+            )}
+          >
+            <PatientList
+              patients={filteredPatients}
+              selectedPatientId={selectedPatientId}
+              onSelectPatient={handleSelectPatient}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
             />
-          )}
-          {patientConfig.stats.active && (
-            <StatCard
-              label="Active"
-              value={patients.filter((p) => p.status === "active").length}
-              icon={Activity}
-              color="blue"
-            />
-          )}
-          {patientConfig.stats.inpatient && (
-            <StatCard
-              label="Inpatients"
-              value={
-                patients.filter((p) => p.patientType === "inpatient").length
+          </div>
+
+          {/* Detail pane */}
+          <div
+            className={cn(
+              "lg:contents",
+              mobileView === "detail" ? "block" : "hidden",
+            )}
+            onTouchStart={(e) => {
+              touchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              const dx = e.changedTouches[0].clientX - touchStartX.current;
+              if (dx > 80 && touchStartX.current < 30) {
+                handleBackToList();
               }
-              icon={Bed}
-              color="purple"
-            />
-          )}
-          {patientConfig.stats.outpatient && (
-            <StatCard
-              label="Outpatients"
-              value={
-                patients.filter((p) => p.patientType === "outpatient").length
-              }
-              icon={User}
-              color="rose"
-            />
-          )}
-          <StatCard
-            label="Discharged"
-            value={patients.filter((p) => p.status === "discharged").length}
-            icon={CheckCircle}
-            color="teal"
-          />
+            }}
+          >
+            {/* ── MOBILE STICKY HEADER (patient + back + tabs) ───────── */}
+            {selectedPatient && (
+              <div className="lg:hidden sticky top-0 z-20 -mx-3 px-3 pt-2 pb-0 bg-[#F8FAFC]">
+                {/* Back + patient name */}
+                <div className="flex items-center gap-2 mb-2.5">
+                  <button
+                    onClick={handleBackToList}
+                    className="w-9 h-9 shrink-0 rounded-xl bg-white border border-slate-200 flex items-center justify-center active:bg-slate-100 transition-colors"
+                    aria-label="Back to patients"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-slate-700" />
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h2 className="text-[15px] font-bold text-slate-900 truncate leading-tight">
+                        {selectedPatient.fullName}
+                      </h2>
+                      <span
+                        className={cn(
+                          "shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full border",
+                          selectedPatient.status === "active"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : selectedPatient.status === "discharged"
+                              ? "bg-slate-100 text-slate-600 border-slate-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200",
+                        )}
+                      >
+                        {selectedPatient.status || "active"}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-mono truncate leading-tight mt-0.5">
+                      #{selectedPatient.id.slice(0, 8).toUpperCase()}
+                      {selectedPatient.patientType && (
+                        <>
+                          {" · "}
+                          <span className="capitalize">
+                            {selectedPatient.patientType}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tab bar — Timeline / Details */}
+                <div className="flex items-center gap-1 border-b border-slate-200">
+                  <button
+                    onClick={() => setMobileDetailTab("timeline")}
+                    className={cn(
+                      "relative px-3 py-2 text-xs font-bold transition-colors",
+                      mobileDetailTab === "timeline"
+                        ? "text-emerald-700"
+                        : "text-slate-500",
+                    )}
+                  >
+                    Timeline
+                    {eventCounts.doctorNotes +
+                      eventCounts.nursingNotes +
+                      eventCounts.vitalsHistory +
+                      eventCounts.prescriptions +
+                      eventCounts.tests >
+                      0 && (
+                      <span className="ml-1 text-[9px] font-semibold text-slate-400">
+                        {eventCounts.doctorNotes +
+                          eventCounts.nursingNotes +
+                          eventCounts.vitalsHistory +
+                          eventCounts.prescriptions +
+                          eventCounts.tests}
+                      </span>
+                    )}
+                    {mobileDetailTab === "timeline" && (
+                      <span className="absolute -bottom-px left-2 right-2 h-0.5 bg-emerald-600 rounded-full" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setMobileDetailTab("details")}
+                    className={cn(
+                      "relative px-3 py-2 text-xs font-bold transition-colors",
+                      mobileDetailTab === "details"
+                        ? "text-emerald-700"
+                        : "text-slate-500",
+                    )}
+                  >
+                    Details
+                    {selectedTimelineEvent && (
+                      <span className="ml-1 w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block align-middle" />
+                    )}
+                    {mobileDetailTab === "details" && (
+                      <span className="absolute -bottom-px left-2 right-2 h-0.5 bg-emerald-600 rounded-full" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── TIMELINE pane ──────────────────────────────────── */}
+            <div
+              className={cn(
+                "lg:block",
+                mobileView === "detail" && mobileDetailTab === "timeline"
+                  ? "block mt-3"
+                  : "hidden",
+              )}
+            >
+              <Timeline
+                selectedPatient={selectedPatient}
+                timelineEvents={timelineEvents}
+                groupedTimeline={groupedTimeline}
+                onShowTakeHomeModal={() => setShowTakeHomeModal(true)}
+                selectedTimelineEvent={selectedTimelineEvent}
+                onSelectTimelineEvent={(event) => {
+                  handleSelectTimelineEvent(event);
+                  if (
+                    typeof window !== "undefined" &&
+                    window.innerWidth < 1024
+                  ) {
+                    setMobileDetailTab("details");
+                  }
+                }}
+                involvedMedics={involvedMedics}
+                eventCounts={eventCounts}
+                permissions={permissions}
+                patientConfig={patientConfig}
+                onEndSession={handleEndSession}
+                canViewDischargedPatients={!patientConfig.showDischarge}
+                onShowVitalsModal={() =>
+                  selectedPatient && setShowVitalsModal(selectedPatient)
+                }
+                onShowNoteModal={(type) =>
+                  selectedPatient &&
+                  setShowNoteModal({ patientId: selectedPatient.id, type })
+                }
+                onShowTestModal={() =>
+                  selectedPatient && setShowTestModal(selectedPatient)
+                }
+                onShowPrescriptionModal={() =>
+                  selectedPatient && setShowPrescriptionModal(selectedPatient)
+                }
+                onDischarge={() => setShowDischargeModal(true)}
+                onRequestDischarge={() =>
+                  selectedPatient && handleRequestDischarge(selectedPatient.id)
+                }
+                onShowReferralModal={() =>
+                  permissions.canReferPatient &&
+                  selectedPatient &&
+                  setShowReferralModal(selectedPatient)
+                }
+                onDispenseRequest={handleDispenseRequest}
+                onShowVitalsChart={() => setShowVitalsChartModal(true)}
+                onAdminister={(patientId, prescription) =>
+                  setShowAdministerModal({ patientId, prescription })
+                }
+                onShowFollowUpAppointment={
+                  selectedPatient
+                    ? () =>
+                        handleOpenFollowUp(
+                          selectedPatient.id,
+                          selectedPatient.fullName,
+                        )
+                    : undefined
+                }
+                onViewBillingDetails={handleViewBillingDetails}
+                onDischargePatient={handleDischargePatient}
+              />
+            </div>
+
+            {/* ── DETAILS pane ───────────────────────────────────── */}
+            <div
+              className={cn(
+                "lg:block",
+                mobileView === "detail" && mobileDetailTab === "details"
+                  ? "block mt-3"
+                  : "hidden",
+              )}
+            >
+              {/* Empty state hint for mobile when nothing is selected */}
+              {!selectedTimelineEvent && (
+                <div className="lg:hidden flex flex-col items-center justify-center text-center py-12 px-6">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="w-6 h-6 text-slate-400"
+                    >
+                      <path d="M9 12h6m-3-3v6M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">
+                    No event selected
+                  </p>
+                  <p className="text-[11px] text-slate-500 max-w-[220px]">
+                    Go back to the{" "}
+                    <button
+                      onClick={() => setMobileDetailTab("timeline")}
+                      className="text-emerald-600 font-semibold underline"
+                    >
+                      Timeline
+                    </button>{" "}
+                    and tap an entry to see full details
+                  </p>
+                </div>
+              )}
+
+              <div className={cn(!selectedTimelineEvent && "hidden lg:block")}>
+                <DetailView
+                  selectedTimelineEvent={selectedTimelineEvent}
+                  permissions={permissions}
+                  user={user}
+                  normalizedRole={normalizedRole}
+                  testResultForm={testResultForm}
+                  setTestResultForm={setTestResultForm}
+                  onUpdateTestResult={handleUpdateTestResult}
+                  onAcceptTest={handleAcceptTest}
+                  onDispenseRequest={handleDispenseRequest}
+                  selectedPatientId={selectedPatientId}
+                  refreshTimeline={refreshFullPatient}
+                  patientTests={patientTests}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* ─── 3‑Column Layout ─────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <PatientList
-            patients={filteredPatients}
-            selectedPatientId={selectedPatientId}
-            onSelectPatient={handleSelectPatient}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-          />
-
-          <Timeline
-            selectedPatient={selectedPatient}
-            timelineEvents={timelineEvents}
-            groupedTimeline={groupedTimeline}
-            onShowTakeHomeModal={() => setShowTakeHomeModal(true)}
-            selectedTimelineEvent={selectedTimelineEvent}
-            onSelectTimelineEvent={handleSelectTimelineEvent}
-            involvedMedics={involvedMedics}
-            eventCounts={eventCounts}
-            permissions={permissions}
-            patientConfig={patientConfig}
-            onEndSession={handleEndSession}
-            canViewDischargedPatients={!patientConfig.showDischarge}
-            onShowVitalsModal={() =>
-              selectedPatient && setShowVitalsModal(selectedPatient)
-            }
-            onShowNoteModal={(type) =>
-              selectedPatient &&
-              setShowNoteModal({ patientId: selectedPatient.id, type })
-            }
-            onShowTestModal={() =>
-              selectedPatient && setShowTestModal(selectedPatient)
-            }
-            onShowPrescriptionModal={() =>
-              selectedPatient && setShowPrescriptionModal(selectedPatient)
-            }
-            onDischarge={() => setShowDischargeModal(true)}
-            onRequestDischarge={() =>
-              selectedPatient && handleRequestDischarge(selectedPatient.id)
-            }
-            onShowReferralModal={() =>
-              permissions.canReferPatient &&
-              selectedPatient &&
-              setShowReferralModal(selectedPatient)
-            }
-            onDispenseRequest={handleDispenseRequest}
-            onShowVitalsChart={() => setShowVitalsChartModal(true)}
-            onAdminister={(patientId, prescription) =>
-              setShowAdministerModal({ patientId, prescription })
-            }
-            onShowFollowUpAppointment={
-              selectedPatient
-                ? () =>
-                    handleOpenFollowUp(
-                      selectedPatient.id,
-                      selectedPatient.fullName,
-                    )
-                : undefined
-            }
-            onViewBillingDetails={handleViewBillingDetails}
-            onDischargePatient={handleDischargePatient}
-          />
-
-          <DetailView
-            selectedTimelineEvent={selectedTimelineEvent}
-            permissions={permissions}
-            user={user}
-            normalizedRole={normalizedRole}
-            testResultForm={testResultForm}
-            setTestResultForm={setTestResultForm}
-            onUpdateTestResult={handleUpdateTestResult}
-            onAcceptTest={handleAcceptTest}
-            onDispenseRequest={handleDispenseRequest}
-            selectedPatientId={selectedPatientId}
-            refreshTimeline={refreshFullPatient}
-            patientTests={patientTests}
-          />
-        </div>
-
-        {/* ─── Modals ────────────────────────────────────────────────── */}
+        {/* ─── Modals (unchanged) ──────────────────────────────────── */}
         <AnimatePresence>
           {(showAddModal || editingPatient) && (
             <PatientModal
@@ -1654,7 +1833,6 @@ export default function PatientsPanel() {
           )}
         </AnimatePresence>
 
-        {/* Take‑Home modal – only if config allows */}
         <AnimatePresence>
           {showTakeHomeModal &&
             selectedPatient &&
@@ -1707,11 +1885,7 @@ export default function PatientsPanel() {
                 mutate(`${patientListKey}?emergency`, undefined, {
                   revalidate: true,
                 });
-
-                // Also call the hook's refetch
                 refetchPatients();
-
-                // If a patient is selected, refresh their detail view
                 if (selectedPatientId) {
                   refreshFullPatient();
                   refetchTests(selectedPatientId);
@@ -1865,7 +2039,6 @@ export default function PatientsPanel() {
           )}
         </AnimatePresence>
 
-        {/* DischargeModal – show only if config allows */}
         <AnimatePresence>
           {showDischargeModal &&
             selectedPatient &&
@@ -1885,7 +2058,6 @@ export default function PatientsPanel() {
             )}
         </AnimatePresence>
 
-        {/* Follow‑up Appointment Modal – show only if config allows */}
         <AnimatePresence>
           {showFollowUpModal && patientConfig.showFollowUp && (
             <FollowUpAppointmentModal

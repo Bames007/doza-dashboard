@@ -3,7 +3,7 @@
 
 import { useDashboard } from "../DashboardContext";
 import { motion } from "framer-motion";
-import DashboardHeader from "../dashboards/components/DashboardHeader";
+// import DashboardHeader from "../dashboards/components/DashboardHeader";
 import LoadingScreen from "../dashboards/components/LoadingScreen";
 import AdSection from "../dashboards/components/AdSection";
 import TutorialSection from "../dashboards/components/TutorialSection";
@@ -53,7 +53,7 @@ export default function DashboardPanel() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Header – shared across all center types */}
-      <DashboardHeader />
+      {/* <DashboardHeader /> */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Main dashboard content */}
@@ -70,21 +70,6 @@ export default function DashboardPanel() {
           <AdSection />
           <TutorialSection />
           <HelpSection />
-        </div>
-
-        {/* Footer note */}
-        <div className="text-center text-gray-500 text-sm mt-12 pb-8">
-          <p>
-            For detailed management, please use the respective sections in the
-            sidebar menu.
-          </p>
-          <p className="mt-1">
-            Dashboard updated:{" "}
-            {new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
         </div>
       </div>
     </div>

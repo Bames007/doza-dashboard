@@ -7,21 +7,20 @@ import { Center, User as UserType } from "@/app/center/type";
 import { useSales } from "../hooks/useSales";
 import { useProducts } from "../hooks/useProducts";
 import { useCustomers } from "../hooks/useCustomers";
-import SalesHeader from "../components/sales/components/SalesHeader";
-import SalesTabs from "../components/sales/components/SalesTabs";
 import { ApiWrapper } from "@/app/utils/apiWrapper";
 import {
   AlertTriangle,
-  Loader2,
   RefreshCw,
   ShoppingBag,
   Package,
   TrendingUp,
-  Users,
-  Shield,
+  ScanLine,
+  X,
 } from "lucide-react";
 import SalesHistoryTab from "../components/sales/components/SalesHistory";
 import POSView from "../components/sales/components/POSViews";
+import { cn } from "@/app/utils/utils";
+import { bebasNeue, poppins } from "@/app/utils/constants";
 
 interface PharmacySalesPanelProps {
   center: Center;
@@ -109,21 +108,19 @@ const PharmacySalesPanel = ({ center, user }: PharmacySalesPanelProps) => {
   } = useCustomers(center.id, user.id, apiWrapper);
   const customersError: string | null = null;
 
-  // Load data with improved error handling
   useEffect(() => {
     const initializeData = async () => {
       setGlobalLoading(true);
       try {
         await Promise.all([loadProducts(), loadCustomers()]);
 
-        // Calculate stats
         const productCount = products.length;
         const customerCount = customers.length;
         const today = new Date().toISOString().split("T")[0];
         const todaySales = activeSales.filter((sale) =>
           sale.createdAt?.startsWith(today),
         ).length;
-        const todayRevenue = todaySales * 1000; // Mock calculation
+        const todayRevenue = todaySales * 1000;
 
         setStats({
           todayRevenue,
@@ -132,7 +129,7 @@ const PharmacySalesPanel = ({ center, user }: PharmacySalesPanelProps) => {
           activeCustomers: customerCount,
         });
       } catch (error) {
-        console.error("❌ Error loading data:", error);
+        console.error("Error loading data:", error);
       } finally {
         setGlobalLoading(false);
       }
@@ -141,9 +138,9 @@ const PharmacySalesPanel = ({ center, user }: PharmacySalesPanelProps) => {
     if (apiWrapper) {
       initializeData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiWrapper, center.id]);
 
-  // Handle Doza user selection
   const handleDozaUserSelect = async (dozaUser: any) => {
     setSelectedDozaUser(dozaUser);
     setSelectedCustomer(null);
@@ -171,7 +168,6 @@ const PharmacySalesPanel = ({ center, user }: PharmacySalesPanelProps) => {
     }
   };
 
-  // Refresh data
   const refreshData = async () => {
     setGlobalLoading(true);
     try {
@@ -181,7 +177,6 @@ const PharmacySalesPanel = ({ center, user }: PharmacySalesPanelProps) => {
     }
   };
 
-  // Format currency helper
   const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -190,343 +185,306 @@ const PharmacySalesPanel = ({ center, user }: PharmacySalesPanelProps) => {
     }).format(amount);
   }, []);
 
-  // Loading state
+  // ─── Loading skeleton ──────────────────────────────────────
   if (globalLoading && products.length === 0 && customers.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center space-y-6">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin mx-auto"></div>
-            <ShoppingBag className="w-10 h-10 text-emerald-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+      <div className="pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto animate-pulse">
+        <div className="mb-3 md:mb-5">
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="h-5 w-0.5 bg-slate-200 rounded-full" />
+            <div className="h-3 w-24 bg-slate-200 rounded" />
+            <div className="h-4 w-10 bg-slate-200 rounded-full" />
           </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-bold text-gray-900">
-              Loading Pharmacy System
-            </h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              Initializing sales dashboard and loading inventory...
-            </p>
-          </div>
-          <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
-            <span className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span>Loading Products</span>
-            </span>
-            <span className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span>Loading Customers</span>
-            </span>
-          </div>
+          <div className="h-7 w-48 bg-slate-200 rounded mb-1" />
+          <div className="h-3 w-56 bg-slate-100 rounded" />
         </div>
+        <div className="flex gap-2.5 mb-3">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-16 w-32 bg-white rounded-xl border border-slate-200 shrink-0 md:flex-1"
+            />
+          ))}
+        </div>
+        <div className="flex gap-1.5 mb-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-8 w-24 bg-slate-200 rounded-lg" />
+          ))}
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 h-96" />
       </div>
     );
   }
 
+  const tabs = [
+    { value: "pos" as const, label: "POS", icon: ShoppingBag },
+    { value: "history" as const, label: "History", icon: TrendingUp },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
-      {/* Top Navigation Bar */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-gray-200/50 shadow-sm"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl shadow-sm">
-                <ShoppingBag className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">
-                  {center.centerName}
-                </h1>
-                <p className="text-xs text-gray-600">Pharmacy Sales System</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {/* Online Status */}
-              <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-emerald-50 rounded-lg">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-emerald-700">
-                  Online
-                </span>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="hidden md:flex items-center space-x-6 text-sm">
-                <div className="text-center">
-                  <p className="text-gray-600">Today</p>
-                  <p className="font-bold text-gray-900">
-                    {formatCurrency(stats.todayRevenue)}
-                  </p>
-                </div>
-                <div className="h-8 w-px bg-gray-200"></div>
-                <div className="text-center">
-                  <p className="text-gray-600">Products</p>
-                  <p className="font-bold text-gray-900">
-                    {stats.availableProducts}
-                  </p>
-                </div>
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                onClick={refreshData}
-                disabled={globalLoading}
-                className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${globalLoading ? "animate-spin" : ""}`}
-                />
-                <span className="text-sm font-medium hidden sm:inline">
-                  Refresh
-                </span>
-              </button>
-            </div>
+    <div className="pb-24 md:pb-0 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto">
+      {/* ─── Compact header ─────────────────────────────────── */}
+      <header className="mb-3 md:mb-5">
+        {/* Row 1: eyebrow + online status + refresh */}
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 uppercase tracking-[0.15em] truncate">
+              Pharmacy POS
+            </span>
+            <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              Online
+            </span>
           </div>
-        </div>
-      </motion.div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Error Alert */}
-        <AnimatePresence>
-          {(productsError || customersError) && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mb-6"
-            >
-              <div className="bg-red-50/90 backdrop-blur-sm border border-red-200 rounded-xl p-4 shadow-sm">
-                <div className="flex items-start">
-                  <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-red-800">
-                      Data Loading Error
-                    </h3>
-                    <div className="mt-1 text-sm text-red-700 space-y-1">
-                      {productsError && <p>• {productsError}</p>}
-                      {customersError && <p>• {customersError}</p>}
-                    </div>
-                    <button
-                      onClick={refreshData}
-                      className="mt-3 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Retry Loading Data
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Main Dashboard Header */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                {activeTab === "pos" ? "Point of Sale" : "Sales History"}
-              </h2>
-              <p className="text-gray-600 mt-1">
-                {activeTab === "pos"
-                  ? "Process customer transactions quickly and efficiently"
-                  : "Track and analyze your pharmacy sales performance"}
-              </p>
-            </div>
-
-            {/* Quick Stats Cards */}
-            <div className="grid grid-cols-2 md:flex md:space-x-4 gap-3">
-              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs min-w-[140px]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500">Today's Sales</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">
-                      {formatCurrency(stats.todayRevenue)}
-                    </p>
-                  </div>
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs min-w-[140px]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500">Products</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">
-                      {stats.availableProducts}
-                    </p>
-                  </div>
-                  <Package className="w-5 h-5 text-blue-500" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tab Navigation */}
-          <div className="relative">
-            <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl max-w-md">
-              <button
-                onClick={() => setActiveTab("pos")}
-                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === "pos"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>POS System</span>
-              </button>
-              <button
-                onClick={() => setActiveTab("history")}
-                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === "history"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <TrendingUp className="w-4 h-4" />
-                <span>Sales History</span>
-              </button>
-            </div>
-
-            {/* Active Tab Indicator */}
-            <motion.div
-              layoutId="activeTab"
-              className="absolute bottom-0 h-0.5 bg-gradient-to-r from-emerald-500 to-green-500"
-              style={{
-                width: "50%",
-                left: activeTab === "pos" ? "0%" : "50%",
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden"
+          <button
+            onClick={refreshData}
+            disabled={globalLoading}
+            className="p-1.5 md:p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 shrink-0"
+            aria-label="Refresh"
           >
-            {activeTab === "pos" ? (
-              <div className="p-6">
-                <POSView
-                  scanning={scanning}
-                  setScanning={setScanning}
-                  showProductSearch={showProductSearch}
-                  setShowProductSearch={setShowProductSearch}
-                  showDozaUser={showDozaUser}
-                  setShowDozaUser={setShowDozaUser}
-                  showReceipt={showReceipt}
-                  setShowReceipt={setShowReceipt}
-                  globalLoading={globalLoading}
-                  setGlobalLoading={setGlobalLoading}
-                  activeSales={activeSales}
-                  selectedSaleIndex={selectedSaleIndex}
-                  currentSale={currentSale}
-                  paymentDetails={paymentDetails}
-                  selectedCustomer={selectedCustomer}
-                  selectedDozaUser={selectedDozaUser}
-                  products={products}
-                  filteredProducts={filteredProducts}
-                  searchTerm={searchTerm}
-                  loading={productsLoading}
-                  error={productsError}
-                  customers={customers}
-                  customersLoading={customersLoading}
-                  customersError={customersError}
-                  center={center}
-                  user={user}
-                  apiWrapper={apiWrapper}
-                  onNewSale={handleNewSale}
-                  onDeleteSale={handleDeleteSale}
-                  onAddProduct={handleAddProduct}
-                  onUpdateQuantity={handleUpdateQuantity}
-                  onRemoveItem={handleRemoveItem}
-                  onApplyDiscount={handleApplyDiscount}
-                  onToggleTax={handleToggleTax}
-                  onCompleteSale={handleCompleteSaleWrapper}
-                  onSetPaymentDetails={setPaymentDetails}
-                  onSetSelectedSaleIndex={setSelectedSaleIndex}
-                  onSetSelectedCustomer={setSelectedCustomer}
-                  onSetSelectedDozaUser={setSelectedDozaUser}
-                  onSetSearchTerm={setSearchTerm}
-                  onLoadProducts={loadProducts}
-                  onLoadCustomers={loadCustomers}
-                  onProductSearch={handleProductSearch}
-                  onGetAvailableProductCount={getAvailableProductCount}
-                  onDozaUserSelect={handleDozaUserSelect}
-                />
+            <RefreshCw
+              className={cn(
+                "w-3.5 h-3.5 text-slate-600",
+                globalLoading && "animate-spin",
+              )}
+            />
+          </button>
+        </div>
+
+        {/* Row 2: title */}
+        <h1
+          className={cn(
+            "text-2xl md:text-4xl text-slate-900 leading-none tracking-tight mb-1",
+            bebasNeue.className,
+          )}
+        >
+          {activeTab === "pos" ? "Point of Sale" : "Sales History"}
+        </h1>
+        <p className="text-[11px] md:text-xs text-slate-500">
+          {activeTab === "pos"
+            ? "Process customer transactions quickly and efficiently"
+            : "Track and analyze your pharmacy sales performance"}
+        </p>
+
+        {/* Row 3: stat pills — horizontal scroll */}
+        <div className="-mx-3 px-3 md:mx-0 md:px-0 mt-3 md:mt-4 flex md:grid md:grid-cols-4 gap-2.5 overflow-x-auto md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 md:pb-0">
+          <StatPill
+            label="Today"
+            value={formatCurrency(stats.todayRevenue)}
+            tone="emerald"
+            icon={TrendingUp}
+          />
+          <StatPill
+            label="Sales"
+            value={String(stats.todaySales)}
+            tone="slate"
+            icon={ShoppingBag}
+          />
+          <StatPill
+            label="Products"
+            value={String(stats.availableProducts)}
+            tone="emerald"
+            icon={Package}
+          />
+          <StatPill
+            label="Customers"
+            value={String(stats.activeCustomers)}
+            tone="slate"
+            icon={TrendingUp}
+          />
+        </div>
+      </header>
+
+      {/* ─── Tabs (chips) ───────────────────────────────────── */}
+      <div className="-mx-3 px-3 md:mx-0 md:px-0 mb-3 md:mb-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.value;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={cn(
+                "shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-bold uppercase tracking-wide transition-all whitespace-nowrap",
+                isActive
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
+              )}
+            >
+              <Icon className="w-3 h-3" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ─── Error banner ───────────────────────────────────── */}
+      <AnimatePresence>
+        {(productsError || customersError) && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="mb-3"
+          >
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-start gap-2.5">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[11px] md:text-xs font-bold text-rose-800">
+                  Data Loading Error
+                </h3>
+                <div className="mt-0.5 text-[10px] md:text-[11px] text-rose-700 space-y-0.5">
+                  {productsError && <p>• {productsError}</p>}
+                  {customersError && <p>• {customersError}</p>}
+                </div>
+                <button
+                  onClick={refreshData}
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] md:text-[11px] font-bold uppercase tracking-wide text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Retry
+                </button>
               </div>
-            ) : (
-              <SalesHistoryTab
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Content ────────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.15 }}
+          className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
+        >
+          {activeTab === "pos" ? (
+            <div className="p-3 md:p-5">
+              <POSView
+                scanning={scanning}
+                setScanning={setScanning}
+                showProductSearch={showProductSearch}
+                setShowProductSearch={setShowProductSearch}
+                showDozaUser={showDozaUser}
+                setShowDozaUser={setShowDozaUser}
+                showReceipt={showReceipt}
+                setShowReceipt={setShowReceipt}
+                globalLoading={globalLoading}
+                setGlobalLoading={setGlobalLoading}
+                activeSales={activeSales}
+                selectedSaleIndex={selectedSaleIndex}
+                currentSale={currentSale}
+                paymentDetails={paymentDetails}
+                selectedCustomer={selectedCustomer}
+                selectedDozaUser={selectedDozaUser}
+                products={products}
+                filteredProducts={filteredProducts}
+                searchTerm={searchTerm}
+                loading={productsLoading}
+                error={productsError}
+                customers={customers}
+                customersLoading={customersLoading}
+                customersError={customersError}
                 center={center}
                 user={user}
                 apiWrapper={apiWrapper}
+                onNewSale={handleNewSale}
+                onDeleteSale={handleDeleteSale}
+                onAddProduct={handleAddProduct}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveItem={handleRemoveItem}
+                onApplyDiscount={handleApplyDiscount}
+                onToggleTax={handleToggleTax}
+                onCompleteSale={handleCompleteSaleWrapper}
+                onSetPaymentDetails={setPaymentDetails}
+                onSetSelectedSaleIndex={setSelectedSaleIndex}
+                onSetSelectedCustomer={setSelectedCustomer}
+                onSetSelectedDozaUser={setSelectedDozaUser}
+                onSetSearchTerm={setSearchTerm}
+                onLoadProducts={loadProducts}
+                onLoadCustomers={loadCustomers}
+                onProductSearch={handleProductSearch}
+                onGetAvailableProductCount={getAvailableProductCount}
+                onDozaUserSelect={handleDozaUserSelect}
               />
-            )}
-          </motion.div>
-        </AnimatePresence>
+            </div>
+          ) : (
+            <SalesHistoryTab
+              center={center}
+              user={user}
+              apiWrapper={apiWrapper}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
 
-        {/* Footer Info */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            {activeTab === "pos"
-              ? "Press F2 to start scanning • F3 to new sale • F4 to open calculator"
-              : "Last updated: Just now • All data is encrypted and secure"}
-          </p>
-        </div>
-      </div>
+      {/* ─── Footer info ────────────────────────────────────── */}
+      <p className="mt-4 text-center text-[10px] text-slate-400 hidden md:block">
+        {activeTab === "pos"
+          ? "Press F2 to start scanning · F3 for new sale · F4 to open calculator"
+          : "Last updated: Just now · All data is encrypted and secure"}
+      </p>
 
-      {/* Mobile Bottom Navigation */}
+      {/* ─── Mobile bottom nav ──────────────────────────────── */}
       {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-2 px-4 z-50">
-          <div className="flex items-center justify-between">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200">
+          <div className="flex items-center justify-around px-2 py-1.5">
             <button
               onClick={() => setActiveTab("pos")}
-              className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg ${
-                activeTab === "pos"
-                  ? "text-emerald-600 bg-emerald-50"
-                  : "text-gray-600"
-              }`}
+              className={cn(
+                "flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors",
+                activeTab === "pos" ? "text-emerald-700" : "text-slate-500",
+              )}
+              aria-label="POS"
             >
               <ShoppingBag className="w-5 h-5" />
-              <span className="text-xs font-medium">POS</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide">
+                POS
+              </span>
             </button>
 
             <button
               onClick={() => setScanning(!scanning)}
-              className="flex flex-col items-center space-y-1 px-4 py-2 rounded-lg text-blue-600"
+              className={cn(
+                "flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors",
+                scanning ? "text-white" : "text-slate-500",
+              )}
+              aria-label="Scan"
             >
               <div
-                className={`w-10 h-10 rounded-full ${scanning ? "bg-blue-600" : "bg-blue-100"} flex items-center justify-center`}
+                className={cn(
+                  "w-9 h-9 rounded-full flex items-center justify-center transition-colors",
+                  scanning
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-emerald-50 text-emerald-700 border border-emerald-200",
+                )}
               >
                 {scanning ? (
-                  <div className="w-3 h-3 bg-white rounded-full"></div>
+                  <X className="w-4 h-4" />
                 ) : (
-                  <div className="w-5 h-5 bg-blue-600 rounded-full"></div>
+                  <ScanLine className="w-4 h-4" />
                 )}
               </div>
-              <span className="text-xs font-medium">Scan</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide">
+                {scanning ? "Stop" : "Scan"}
+              </span>
             </button>
 
             <button
               onClick={() => setActiveTab("history")}
-              className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg ${
-                activeTab === "history"
-                  ? "text-emerald-600 bg-emerald-50"
-                  : "text-gray-600"
-              }`}
+              className={cn(
+                "flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors",
+                activeTab === "history" ? "text-emerald-700" : "text-slate-500",
+              )}
+              aria-label="History"
             >
               <TrendingUp className="w-5 h-5" />
-              <span className="text-xs font-medium">History</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide">
+                History
+              </span>
             </button>
           </div>
         </div>
@@ -534,5 +492,57 @@ const PharmacySalesPanel = ({ center, user }: PharmacySalesPanelProps) => {
     </div>
   );
 };
+
+// ─── Stat Pill ──────────────────────────────────────────────────────
+
+function StatPill({
+  label,
+  value,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  tone: "emerald" | "slate";
+  icon: any;
+}) {
+  const toneStyles: Record<string, { bg: string; iconBg: string }> = {
+    emerald: {
+      bg: "bg-emerald-50 border-emerald-200 text-emerald-700",
+      iconBg: "bg-emerald-100 text-emerald-700",
+    },
+    slate: {
+      bg: "bg-slate-50 border-slate-200 text-slate-700",
+      iconBg: "bg-slate-100 text-slate-600",
+    },
+  };
+  const style = toneStyles[tone];
+
+  return (
+    <div
+      className={cn(
+        "shrink-0 w-32 sm:w-36 md:w-auto flex items-center justify-between gap-2 px-3 py-2 rounded-xl border",
+        style.bg,
+      )}
+    >
+      <div className="min-w-0">
+        <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "text-sm md:text-base font-bold tabular-nums leading-none mt-0.5 truncate",
+            bebasNeue.className,
+          )}
+        >
+          {value}
+        </p>
+      </div>
+      <div className={cn("p-1.5 rounded-lg shrink-0", style.iconBg)}>
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+    </div>
+  );
+}
 
 export default PharmacySalesPanel;

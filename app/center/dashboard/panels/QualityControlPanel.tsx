@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   Search,
   Plus,
-  MoreVertical,
   Edit,
   Trash2,
   CheckCircle,
@@ -16,8 +15,6 @@ import {
   X,
   Loader2,
   Calendar,
-  User,
-  FileText,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDashboard } from "../DashboardContext";
@@ -59,6 +56,61 @@ interface QCFormData {
   notes: string;
 }
 
+// ─── Result styling ─────────────────────────────────────────────────
+
+const getResultStyle = (result: string) => {
+  const map: Record<string, { bg: string; icon: any; label: string }> = {
+    pass: {
+      bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      icon: CheckCircle,
+      label: "Pass",
+    },
+    fail: {
+      bg: "bg-rose-50 text-rose-700 border-rose-200",
+      icon: XCircle,
+      label: "Fail",
+    },
+    pending: {
+      bg: "bg-amber-50 text-amber-700 border-amber-200",
+      icon: AlertCircle,
+      label: "Pending",
+    },
+  };
+  return (
+    map[result] || {
+      bg: "bg-slate-100 text-slate-600 border-slate-200",
+      icon: AlertCircle,
+      label: result,
+    }
+  );
+};
+
+const ResultBadge = ({ result }: { result: string }) => {
+  const style = getResultStyle(result);
+  const Icon = style.icon;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wide rounded-full border shrink-0",
+        style.bg,
+      )}
+    >
+      <Icon className="w-2.5 h-2.5" />
+      {style.label}
+    </span>
+  );
+};
+
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 // ─── Main Component ──────────────────────────────────────────────────
 
 export default function QualityControlPanel() {
@@ -76,6 +128,7 @@ export default function QualityControlPanel() {
 
   useEffect(() => {
     if (center?.id) fetchQC();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center?.id]);
 
   const fetchQC = async () => {
@@ -172,263 +225,304 @@ export default function QualityControlPanel() {
     return matchesSearch && matchesResult;
   });
 
-  const getResultConfig = (result: string) => {
-    switch (result) {
-      case "pass":
-        return {
-          label: "Pass",
-          bg: "bg-emerald-100",
-          text: "text-emerald-800",
-          border: "border-emerald-200",
-          icon: CheckCircle,
-        };
-      case "fail":
-        return {
-          label: "Fail",
-          bg: "bg-rose-100",
-          text: "text-rose-800",
-          border: "border-rose-200",
-          icon: XCircle,
-        };
-      default:
-        return {
-          label: "Pending",
-          bg: "bg-amber-100",
-          text: "text-amber-800",
-          border: "border-amber-200",
-          icon: AlertCircle,
-        };
-    }
+  const stats = {
+    total: records.length,
+    pass: records.filter((r) => r.result === "pass").length,
+    fail: records.filter((r) => r.result === "fail").length,
+    pending: records.filter((r) => r.result === "pending").length,
   };
 
   if (loading) return <QualityControlSkeleton />;
 
+  const statusTabs = [
+    { value: "all", label: "All", count: stats.total },
+    { value: "pass", label: "Pass", count: stats.pass },
+    { value: "fail", label: "Fail", count: stats.fail },
+    { value: "pending", label: "Pending", count: stats.pending },
+  ];
+
   return (
-    <div className={cn("space-y-6", poppins.className)}>
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-7 w-1 rounded-full bg-emerald-500" />
-            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+    <div
+      className={cn(
+        "pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto",
+        poppins.className,
+      )}
+    >
+      {/* ─── Compact header ─────────────────────────────────── */}
+      <header className="mb-3 md:mb-5">
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 uppercase tracking-[0.15em] truncate">
               Quality Control
             </span>
-            <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-              {records.length} records
+            <span className="text-[9px] md:text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
+              {records.length}
             </span>
-          </div>
-          <h1
-            className={cn(
-              "text-2xl font-bold text-slate-900",
-              bebasNeue.className,
+            {stats.fail > 0 && (
+              <span className="text-[9px] md:text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
+                {stats.fail} failing
+              </span>
             )}
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all text-[11px] md:text-xs font-bold uppercase tracking-wide shadow-sm shrink-0"
           >
-            Quality Control
-          </h1>
-          <p className="text-sm text-slate-600">
-            Track QC runs and ensure lab accuracy
-          </p>
+            <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="hidden sm:inline">New QC</span>
+            <span className="sm:hidden">New</span>
+          </button>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-emerald-200/50 transition-all flex items-center gap-2 text-sm font-semibold"
+
+        <h1
+          className={cn(
+            "text-2xl md:text-4xl text-slate-900 leading-none tracking-tight mb-1",
+            bebasNeue.className,
+          )}
         >
-          <Plus className="w-4 h-4" />
-          New QC Run
-        </button>
+          Quality Control
+        </h1>
+        <p className="text-[11px] md:text-xs text-slate-500">
+          Track QC runs and ensure lab accuracy
+        </p>
       </header>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by test, control, lot, operator..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-800 placeholder:text-slate-400 transition-all outline-none"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <select
-            className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-700 transition-all outline-none"
-            value={resultFilter}
-            onChange={(e) => setResultFilter(e.target.value)}
-          >
-            <option value="all">All Results</option>
-            <option value="pass">Pass</option>
-            <option value="fail">Fail</option>
-            <option value="pending">Pending</option>
-          </select>
-        </div>
+      {/* ─── Stat pills ─────────────────────────────────────── */}
+      <div className="-mx-3 px-3 md:mx-0 md:px-0 flex md:grid md:grid-cols-4 gap-2.5 overflow-x-auto md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 md:pb-0 mb-3 md:mb-5">
+        <StatPill
+          label="Total"
+          value={stats.total}
+          tone="slate"
+          icon={ShieldCheck}
+        />
+        <StatPill
+          label="Pass"
+          value={stats.pass}
+          tone="emerald"
+          icon={CheckCircle}
+        />
+        <StatPill label="Fail" value={stats.fail} tone="rose" icon={XCircle} />
+        <StatPill
+          label="Pending"
+          value={stats.pending}
+          tone="amber"
+          icon={AlertCircle}
+        />
       </div>
 
-      {/* Error */}
+      {/* ─── Search ─────────────────────────────────────────── */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search by test, control, lot, operator…"
+          className="w-full pl-9 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs md:text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none shadow-sm transition-all"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded-full transition-colors"
+            aria-label="Clear search"
+          >
+            <X className="w-3.5 h-3.5 text-slate-400" />
+          </button>
+        )}
+      </div>
+
+      {/* ─── Result chips ───────────────────────────────────── */}
+      <div className="-mx-3 px-3 md:mx-0 md:px-0 mb-3 md:mb-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+        {statusTabs.map((tab) => {
+          const isActive = resultFilter === tab.value;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setResultFilter(tab.value)}
+              className={cn(
+                "shrink-0 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-bold uppercase tracking-wide transition-all whitespace-nowrap",
+                isActive
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
+              )}
+            >
+              {tab.label}
+              <span
+                className={cn(
+                  "ml-1.5 text-[9px] md:text-[10px] font-semibold tabular-nums",
+                  isActive ? "text-emerald-100" : "text-slate-400",
+                )}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ─── Error banner ───────────────────────────────────── */}
       {error && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-rose-700 text-sm flex items-center gap-2">
-          <AlertCircle className="w-5 h-5" />
-          {error}
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-2.5 md:p-3 mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+            <span className="text-[11px] md:text-xs text-rose-700 font-medium truncate">
+              {error}
+            </span>
+          </div>
+          <button
+            onClick={() => setError("")}
+            className="p-1 hover:bg-rose-100 rounded-lg transition-colors shrink-0"
+          >
+            <X className="w-3.5 h-3.5 text-rose-600" />
+          </button>
         </div>
       )}
 
-      {/* Records List */}
+      {/* ─── Records ────────────────────────────────────────── */}
       {filteredRecords.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200/80">
-          <ShieldCheck className="w-16 h-16 mx-auto text-slate-300" />
+        <div className="bg-white rounded-2xl border border-slate-200 p-10 md:p-12 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3">
+            <ShieldCheck className="w-6 h-6 text-slate-300" />
+          </div>
           <h3
             className={cn(
-              "mt-4 text-lg font-bold text-slate-800",
+              "text-base md:text-lg font-bold text-slate-800 mb-1",
               bebasNeue.className,
             )}
           >
             No QC records found
           </h3>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-[11px] md:text-xs text-slate-500 max-w-sm mx-auto">
             {search || resultFilter !== "all"
-              ? "Try different filters"
-              : "Record your first QC run"}
+              ? "Try adjusting your filters."
+              : "Record your first QC run to get started."}
           </p>
+          {(search || resultFilter !== "all") && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setResultFilter("all");
+              }}
+              className="mt-4 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:text-emerald-700 bg-slate-50 border border-slate-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-200 transition-all"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {filteredRecords.map((record) => {
-            const resultConfig = getResultConfig(record.result);
-            const ResultIcon = resultConfig.icon;
+            const style = getResultStyle(record.result);
+            const ResultIcon = style.icon;
+
             return (
               <motion.div
                 key={record.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow"
+                className="bg-white rounded-2xl border border-slate-200 p-3 md:p-4 hover:border-emerald-200 transition-colors"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center",
-                        record.result === "pass"
-                          ? "bg-emerald-100"
-                          : record.result === "fail"
-                            ? "bg-rose-100"
-                            : "bg-amber-100",
-                      )}
-                    >
-                      <ShieldCheck
-                        className={cn(
-                          "w-5 h-5",
-                          record.result === "pass"
-                            ? "text-emerald-600"
-                            : record.result === "fail"
-                              ? "text-rose-600"
-                              : "text-amber-600",
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-slate-900">
+                {/* Top row */}
+                <div className="flex items-start gap-2.5 mb-2">
+                  <div
+                    className={cn("p-2 rounded-lg border shrink-0", style.bg)}
+                  >
+                    <ResultIcon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-0.5">
+                      <h3 className="text-xs md:text-sm font-bold text-slate-900 truncate">
                         {record.controlName}
                       </h3>
-                      <p className="text-sm text-slate-500">
-                        {record.testType}
-                      </p>
+                      <ResultBadge result={record.result} />
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border",
-                        resultConfig.bg,
-                        resultConfig.text,
-                        resultConfig.border,
-                      )}
-                    >
-                      <ResultIcon className="w-3 h-3" />
-                      {resultConfig.label}
-                    </span>
-                    <span className="text-sm text-slate-500 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {new Date(record.performedAt).toLocaleDateString()}
-                    </span>
-                    <div className="relative">
-                      <button
-                        onClick={() => setEditingRecord(record)}
-                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-                        aria-label="More options"
-                      >
-                        <MoreVertical className="w-4 h-4 text-slate-400" />
-                      </button>
-                      {editingRecord?.id === record.id && (
-                        <div className="absolute right-0 mt-1 w-40 bg-white rounded-xl shadow-xl border border-slate-200/80 z-10 py-1">
-                          <button
-                            onClick={() => setEditingRecord(record)}
-                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowDeleteConfirm(record.id);
-                              setEditingRecord(null);
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <p className="text-[10px] md:text-[11px] text-slate-500 truncate">
+                      {record.testType}
+                    </p>
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-slate-700">
+                {/* Metadata grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-2 pt-2 border-t border-slate-100">
                   <div>
-                    <span className="text-xs text-slate-400 block">Lot #</span>
-                    <span className="font-medium">{record.lotNumber}</span>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
+                      Lot #
+                    </p>
+                    <p className="text-[11px] md:text-xs font-medium text-slate-800 font-mono truncate mt-0.5">
+                      {record.lotNumber}
+                    </p>
                   </div>
                   {record.expiryDate && (
                     <div>
-                      <span className="text-xs text-slate-400 block">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
                         Expiry
-                      </span>
-                      <span className="font-medium">
-                        {new Date(record.expiryDate).toLocaleDateString()}
-                      </span>
+                      </p>
+                      <p className="text-[11px] md:text-xs font-medium text-slate-800 tabular-nums mt-0.5 truncate">
+                        {formatDate(record.expiryDate)}
+                      </p>
                     </div>
                   )}
                   {record.value && (
                     <div>
-                      <span className="text-xs text-slate-400 block">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
                         Value
-                      </span>
-                      <span className="font-medium">
-                        {record.value} {record.unit || ""}
-                      </span>
+                      </p>
+                      <p className="text-[11px] md:text-xs font-medium text-slate-800 tabular-nums mt-0.5 truncate">
+                        {record.value}
+                        {record.unit ? ` ${record.unit}` : ""}
+                      </p>
                     </div>
                   )}
                   <div>
-                    <span className="text-xs text-slate-400 block">
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
                       Operator
-                    </span>
-                    <span className="font-medium">
+                    </p>
+                    <p className="text-[11px] md:text-xs font-medium text-slate-800 truncate mt-0.5">
                       {record.operator || record.performedBy}
-                    </span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
+                      Performed
+                    </p>
+                    <p className="text-[11px] md:text-xs font-medium text-slate-800 tabular-nums mt-0.5 truncate">
+                      {formatDate(record.performedAt)}
+                    </p>
                   </div>
                 </div>
+
+                {/* Notes */}
                 {record.notes && (
-                  <p className="mt-2 text-xs text-slate-500 border-t border-slate-100 pt-2">
+                  <p className="text-[10px] md:text-[11px] text-slate-500 leading-relaxed line-clamp-2 mt-2 pt-2 border-t border-slate-100">
                     {record.notes}
                   </p>
                 )}
+
+                {/* Actions */}
+                <div className="flex gap-1.5 pt-2.5 mt-2.5 border-t border-slate-100">
+                  <button
+                    onClick={() => setEditingRecord(record)}
+                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] md:text-[11px] font-bold uppercase tracking-wide rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Edit className="w-3 h-3" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(record.id)}
+                    className="px-2.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg transition-colors shrink-0"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </motion.div>
             );
           })}
         </div>
       )}
 
-      {/* Modals */}
+      {/* ─── Add/Edit Modal ─────────────────────────────────── */}
       <AnimatePresence>
         {(showAddModal || editingRecord) && (
           <QCModal
@@ -459,7 +553,67 @@ export default function QualityControlPanel() {
   );
 }
 
-// ─── QC Modal ──────────────────────────────────────────────────────
+// ─── Stat Pill ──────────────────────────────────────────────────────
+
+function StatPill({
+  label,
+  value,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  tone: "emerald" | "slate" | "amber" | "rose";
+  icon: any;
+}) {
+  const toneStyles: Record<string, { bg: string; iconBg: string }> = {
+    emerald: {
+      bg: "bg-emerald-50 border-emerald-200 text-emerald-700",
+      iconBg: "bg-emerald-100 text-emerald-700",
+    },
+    slate: {
+      bg: "bg-slate-50 border-slate-200 text-slate-700",
+      iconBg: "bg-slate-100 text-slate-600",
+    },
+    amber: {
+      bg: "bg-amber-50 border-amber-200 text-amber-700",
+      iconBg: "bg-amber-100 text-amber-700",
+    },
+    rose: {
+      bg: "bg-rose-50 border-rose-200 text-rose-700",
+      iconBg: "bg-rose-100 text-rose-700",
+    },
+  };
+  const style = toneStyles[tone];
+
+  return (
+    <div
+      className={cn(
+        "shrink-0 w-32 sm:w-40 md:w-auto flex items-center justify-between gap-2 px-3 py-2 rounded-xl border",
+        style.bg,
+      )}
+    >
+      <div className="min-w-0">
+        <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "text-lg md:text-xl font-bold tabular-nums leading-none mt-0.5",
+            bebasNeue.className,
+          )}
+        >
+          {value}
+        </p>
+      </div>
+      <div className={cn("p-1.5 rounded-lg shrink-0", style.iconBg)}>
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+    </div>
+  );
+}
+
+// ─── QC Modal (bottom sheet on mobile) ──────────────────────────────
 
 function QCModal({
   record,
@@ -495,18 +649,34 @@ function QCModal({
     setLoading(false);
   };
 
+  const inputClass =
+    "w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition";
+  const labelClass =
+    "block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5";
+
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div
+      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 40, scale: 0.96 }}
-        className="bg-white rounded-t-2xl sm:rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200/80"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 240 }}
+        className="bg-white rounded-t-3xl sm:rounded-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 px-4 sm:px-6 py-4 flex items-center justify-between rounded-t-2xl">
+        {/* Handle bar */}
+        <div className="sm:hidden pt-2 pb-1 flex justify-center">
+          <div className="w-10 h-1 bg-slate-200 rounded-full" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100">
           <h2
             className={cn(
-              "text-lg font-bold text-slate-900",
+              "text-base sm:text-lg font-bold text-slate-900",
               bebasNeue.className,
             )}
           >
@@ -514,83 +684,74 @@ function QCModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
-            aria-label="Close modal"
+            className="p-1.5 -m-1 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="Close"
           >
-            <X className="w-5 h-5 text-slate-500" />
+            <X className="w-4 h-4 text-slate-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Form body */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5"
+        >
+          {/* Test + Control */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
-              <label
-                htmlFor="qc-test-type"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Test Type *
+              <label className={labelClass}>
+                Test Type <span className="text-rose-500">*</span>
               </label>
               <input
-                id="qc-test-type"
                 type="text"
                 required
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-400 transition-all"
+                className={inputClass}
                 value={formData.testType}
                 onChange={(e) =>
                   setFormData({ ...formData, testType: e.target.value })
                 }
+                placeholder="e.g., CBC"
               />
             </div>
             <div>
-              <label
-                htmlFor="qc-control-name"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Control Name *
+              <label className={labelClass}>
+                Control Name <span className="text-rose-500">*</span>
               </label>
               <input
-                id="qc-control-name"
                 type="text"
                 required
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-400 transition-all"
+                className={inputClass}
                 value={formData.controlName}
                 onChange={(e) =>
                   setFormData({ ...formData, controlName: e.target.value })
                 }
+                placeholder="e.g., Normal Control"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Lot + Expiry */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label
-                htmlFor="qc-lot"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Lot Number *
+              <label className={labelClass}>
+                Lot Number <span className="text-rose-500">*</span>
               </label>
               <input
-                id="qc-lot"
                 type="text"
                 required
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-400 transition-all"
+                className={cn(inputClass, "font-mono")}
                 value={formData.lotNumber}
                 onChange={(e) =>
                   setFormData({ ...formData, lotNumber: e.target.value })
                 }
+                placeholder="LOT-001"
               />
             </div>
             <div>
-              <label
-                htmlFor="qc-expiry"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Expiry Date
-              </label>
+              <label className={labelClass}>Expiry Date</label>
               <input
-                id="qc-expiry"
                 type="date"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 transition-all"
+                className={cn(inputClass, "tabular-nums")}
                 value={formData.expiryDate}
                 onChange={(e) =>
                   setFormData({ ...formData, expiryDate: e.target.value })
@@ -599,56 +760,44 @@ function QCModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Instrument + Operator */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label
-                htmlFor="qc-instrument"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Instrument
-              </label>
+              <label className={labelClass}>Instrument</label>
               <input
-                id="qc-instrument"
                 type="text"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-400 transition-all"
+                className={inputClass}
                 value={formData.instrument}
                 onChange={(e) =>
                   setFormData({ ...formData, instrument: e.target.value })
                 }
+                placeholder="Sysmex XN-1000"
               />
             </div>
             <div>
-              <label
-                htmlFor="qc-operator"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Operator
-              </label>
+              <label className={labelClass}>Operator</label>
               <input
-                id="qc-operator"
                 type="text"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-400 transition-all"
+                className={inputClass}
                 value={formData.operator}
                 onChange={(e) =>
                   setFormData({ ...formData, operator: e.target.value })
                 }
+                placeholder="Full name"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Performed At + Result */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label
-                htmlFor="qc-performed-at"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Performed At *
+              <label className={labelClass}>
+                Performed At <span className="text-rose-500">*</span>
               </label>
               <input
-                id="qc-performed-at"
                 type="date"
                 required
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 transition-all"
+                className={cn(inputClass, "tabular-nums")}
                 value={formData.performedAt}
                 onChange={(e) =>
                   setFormData({ ...formData, performedAt: e.target.value })
@@ -656,16 +805,12 @@ function QCModal({
               />
             </div>
             <div>
-              <label
-                htmlFor="qc-result"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Result *
+              <label className={labelClass}>
+                Result <span className="text-rose-500">*</span>
               </label>
               <select
-                id="qc-result"
                 required
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 transition-all"
+                className={cn(inputClass, "truncate")}
                 value={formData.result}
                 onChange={(e) =>
                   setFormData({
@@ -681,85 +826,69 @@ function QCModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Value + Unit */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label
-                htmlFor="qc-value"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Value
-              </label>
+              <label className={labelClass}>Value</label>
               <input
-                id="qc-value"
                 type="text"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-400 transition-all"
+                className={cn(inputClass, "tabular-nums")}
                 value={formData.value}
                 onChange={(e) =>
                   setFormData({ ...formData, value: e.target.value })
                 }
+                placeholder="e.g., 7.2"
               />
             </div>
             <div>
-              <label
-                htmlFor="qc-unit"
-                className="block text-sm font-medium text-slate-700 mb-1"
-              >
-                Unit
-              </label>
+              <label className={labelClass}>Unit</label>
               <input
-                id="qc-unit"
                 type="text"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-400 transition-all"
+                className={inputClass}
                 value={formData.unit}
                 onChange={(e) =>
                   setFormData({ ...formData, unit: e.target.value })
                 }
+                placeholder="e.g., g/dL"
               />
             </div>
           </div>
 
+          {/* Notes */}
           <div>
-            <label
-              htmlFor="qc-notes"
-              className="block text-sm font-medium text-slate-700 mb-1"
-            >
-              Notes
-            </label>
+            <label className={labelClass}>Notes</label>
             <textarea
-              id="qc-notes"
-              rows={3}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm text-slate-900 placeholder:text-slate-400 transition-all resize-none"
+              rows={2}
+              className={cn(inputClass, "resize-none")}
               value={formData.notes}
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
               }
+              placeholder="Additional observations…"
             />
           </div>
-
-          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-slate-200/80">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-emerald-200/50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-              {record
-                ? loading
-                  ? "Updating..."
-                  : "Update Record"
-                : loading
-                  ? "Adding..."
-                  : "Save Record"}
-            </button>
-          </div>
         </form>
+
+        {/* Footer */}
+        <div className="border-t border-slate-100 p-4 sm:p-5 flex flex-col-reverse sm:flex-row gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wide transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="qc-form"
+            onClick={handleSubmit as any}
+            disabled={loading}
+            className="w-full sm:flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wide transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
+          >
+            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {record ? "Update" : "Save"}
+          </button>
+        </div>
       </motion.div>
     </div>
   );
@@ -769,51 +898,36 @@ function QCModal({
 
 function QualityControlSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="h-8 w-32 bg-slate-200 rounded" />
-          <div className="h-5 w-48 bg-slate-100 rounded mt-1" />
+    <div className="pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto animate-pulse">
+      <div className="mb-3 md:mb-5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <div className="h-5 w-0.5 bg-slate-200 rounded-full" />
+          <div className="h-3 w-28 bg-slate-200 rounded" />
+          <div className="h-4 w-10 bg-slate-200 rounded-full" />
         </div>
-        <div className="h-10 w-28 bg-slate-200 rounded-xl" />
+        <div className="h-7 w-40 bg-slate-200 rounded mb-1" />
+        <div className="h-3 w-56 bg-slate-100 rounded" />
       </div>
-
-      <div className="bg-white rounded-2xl p-4 border border-slate-200/80">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 h-11 bg-slate-200 rounded-xl" />
-          <div className="w-40 h-11 bg-slate-200 rounded-xl" />
-        </div>
-      </div>
-
-      <div className="space-y-3">
+      <div className="flex gap-2.5 mb-3 md:mb-5">
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="bg-white rounded-2xl p-5 border border-slate-200/80"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-slate-200 rounded-xl" />
-                <div>
-                  <div className="h-5 w-32 bg-slate-200 rounded" />
-                  <div className="h-4 w-24 bg-slate-100 rounded mt-1" />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="h-6 w-16 bg-slate-200 rounded-full" />
-                <div className="h-5 w-20 bg-slate-200 rounded" />
-                <div className="h-8 w-8 bg-slate-200 rounded-lg" />
-              </div>
-            </div>
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[1, 2, 3, 4].map((j) => (
-                <div key={j}>
-                  <div className="h-3 w-12 bg-slate-200 rounded" />
-                  <div className="h-4 w-16 bg-slate-100 rounded mt-1" />
-                </div>
-              ))}
-            </div>
-          </div>
+            className="h-16 w-32 bg-white rounded-xl border border-slate-200 shrink-0 md:flex-1"
+          />
+        ))}
+      </div>
+      <div className="h-10 bg-white rounded-xl border border-slate-200 mb-3" />
+      <div className="flex gap-1.5 mb-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-8 w-20 bg-slate-200 rounded-lg" />
+        ))}
+      </div>
+      <div className="space-y-2.5">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="bg-white rounded-2xl border border-slate-200 p-3.5 h-36"
+          />
         ))}
       </div>
     </div>

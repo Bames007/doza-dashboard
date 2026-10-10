@@ -130,7 +130,6 @@ export function RequisitionModal({
       ...(selectedStaffId && {
         assignedToUserId: selectedStaffId,
         assignedToName: selectedStaffName,
-        // Also send the staff's role as approverRole (optional)
         approverRole: staffList.find((s) => s.id === selectedStaffId)
           ?.professional?.role,
       }),
@@ -143,7 +142,7 @@ export function RequisitionModal({
     setSubmitting(true);
     try {
       await onSave(payload);
-      // Reset
+      // Reset form
       setType("clinical");
       setPriority("routine");
       setPatientName("");
@@ -166,17 +165,28 @@ export function RequisitionModal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200/80"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 240 }}
+            className="bg-white rounded-t-3xl sm:rounded-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+            {/* Handle bar for mobile */}
+            <div className="sm:hidden pt-2 pb-1 flex justify-center">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100">
               <h2
                 className={cn(
-                  "text-2xl font-bold text-slate-900",
+                  "text-base sm:text-lg font-bold text-slate-900",
                   bebasNeue.className,
                 )}
               >
@@ -184,50 +194,45 @@ export function RequisitionModal({
               </h2>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-slate-100 rounded-xl transition-colors focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                 disabled={submitting}
+                className="p-1.5 -m-1 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+                aria-label="Close"
               >
-                <X className="w-5 h-5 text-slate-600" />
+                <X className="w-4 h-4 text-slate-500" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            {/* Form body */}
+            <form
+              onSubmit={handleSubmit}
+              className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5"
+            >
               {/* Type & Priority */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label
-                    className={cn(
-                      "block text-xs font-medium text-slate-700 mb-1",
-                      poppins.className,
-                    )}
-                  >
-                    Request Type *
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                    Request Type <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={type}
                     onChange={(e) => setType(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs sm:text-sm text-slate-900 outline-none transition truncate"
                     required
                   >
-                    <option value="clinical">Clinical (Patient Request)</option>
+                    <option value="clinical">Clinical (Patient)</option>
                     <option value="pharmacy-restock">Pharmacy Restock</option>
                     <option value="lab">Lab Reagents</option>
                     <option value="ward-supply">Ward Supplies</option>
                   </select>
                 </div>
                 <div>
-                  <label
-                    className={cn(
-                      "block text-xs font-medium text-slate-700 mb-1",
-                      poppins.className,
-                    )}
-                  >
-                    Priority *
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                    Priority <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs sm:text-sm text-slate-900 outline-none transition truncate"
                     required
                   >
                     <option value="routine">Routine</option>
@@ -239,27 +244,22 @@ export function RequisitionModal({
 
               {/* Staff selection */}
               <div>
-                <label
-                  className={cn(
-                    "block text-xs font-medium text-slate-700 mb-1",
-                    poppins.className,
-                  )}
-                >
-                  Assign to Specific Staff (optional)
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                  Assign to Staff (optional)
                 </label>
                 <div className="relative">
-                  <div className="flex items-center border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500 transition">
-                    <User className="w-4 h-4 text-slate-400 ml-3" />
+                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:ring-2 focus-within:ring-emerald-500/40 focus-within:border-emerald-500 transition">
+                    <User className="w-3.5 h-3.5 text-slate-400 ml-3 shrink-0" />
                     <input
                       type="text"
-                      placeholder="Search staff by name..."
+                      placeholder="Search staff by name…"
                       value={staffSearch}
                       onChange={(e) => {
                         setStaffSearch(e.target.value);
                         setIsStaffDropdownOpen(true);
                       }}
                       onFocus={() => setIsStaffDropdownOpen(true)}
-                      className="flex-1 px-3 py-2 bg-transparent outline-none text-sm text-slate-900 placeholder:text-slate-400"
+                      className="flex-1 px-3 py-2.5 bg-transparent outline-none text-xs sm:text-sm text-slate-900 placeholder:text-slate-400"
                     />
                     {selectedStaffId && (
                       <button
@@ -269,9 +269,10 @@ export function RequisitionModal({
                           setSelectedStaffName("");
                           setStaffSearch("");
                         }}
-                        className="pr-2 text-slate-400 hover:text-slate-600"
+                        className="pr-3 text-slate-400 hover:text-slate-600 shrink-0"
+                        aria-label="Clear"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
@@ -279,13 +280,13 @@ export function RequisitionModal({
                   {isStaffDropdownOpen && (
                     <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
                       {loadingStaff ? (
-                        <div className="p-4 text-center text-sm text-slate-500">
-                          <Loader2 className="w-5 h-5 animate-spin mx-auto mb-1" />
-                          Loading staff...
+                        <div className="p-4 text-center text-xs text-slate-500">
+                          <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1" />
+                          Loading…
                         </div>
                       ) : filteredStaff.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-slate-500">
-                          No staff members found
+                        <div className="p-4 text-center text-xs text-slate-500">
+                          No staff found
                         </div>
                       ) : (
                         filteredStaff.map((staff) => {
@@ -303,26 +304,26 @@ export function RequisitionModal({
                               key={staff.id}
                               type="button"
                               onClick={() => handleSelectStaff(staff)}
-                              className="w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-0"
+                              className="w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2.5 border-b border-slate-100 last:border-0"
                             >
                               <div
                                 className={cn(
-                                  "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold",
+                                  "w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0",
                                   color,
                                 )}
                               >
                                 {initials}
                               </div>
-                              <div className="flex-1">
-                                <div className="text-sm font-medium text-slate-800">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-bold text-slate-800 truncate">
                                   {staff.personalInfo.fullName}
                                 </div>
-                                <div className="text-xs text-slate-500">
+                                <div className="text-[9px] text-slate-500 truncate">
                                   {staff.professional.role}
                                 </div>
                               </div>
                               {selectedStaffId === staff.id && (
-                                <Check className="w-4 h-4 text-emerald-600" />
+                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                               )}
                             </button>
                           );
@@ -331,11 +332,12 @@ export function RequisitionModal({
                     </div>
                   )}
                 </div>
+
                 {selectedStaffId && (
-                  <div className="mt-2 flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                  <div className="mt-2 flex items-center gap-2 text-[10px] text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
                     <div
                       className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold",
+                        "w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0",
                         getAvatarColor(selectedStaffName),
                       )}
                     >
@@ -346,22 +348,18 @@ export function RequisitionModal({
                         .toUpperCase()
                         .slice(0, 2)}
                     </div>
-                    <span>
-                      Assigned to <strong>{selectedStaffName}</strong>
+                    <span className="truncate">
+                      Assigned to{" "}
+                      <strong className="font-bold">{selectedStaffName}</strong>
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Patient name – clinical only */}
+              {/* Patient name — clinical only */}
               {type === "clinical" && (
                 <div>
-                  <label
-                    className={cn(
-                      "block text-xs font-medium text-slate-700 mb-1",
-                      poppins.className,
-                    )}
-                  >
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
                     Patient Name (optional)
                   </label>
                   <input
@@ -369,27 +367,22 @@ export function RequisitionModal({
                     value={patientName}
                     onChange={(e) => setPatientName(e.target.value)}
                     placeholder="e.g., John Doe"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition"
                   />
                 </div>
               )}
 
               {/* Clinical Notes */}
               <div>
-                <label
-                  className={cn(
-                    "block text-xs font-medium text-slate-700 mb-1",
-                    poppins.className,
-                  )}
-                >
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
                   Clinical Notes / Justification
                 </label>
                 <textarea
                   value={clinicalNotes}
                   onChange={(e) => setClinicalNotes(e.target.value)}
                   rows={2}
-                  placeholder="Reason for request, diagnosis, or any special instructions..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                  placeholder="Reason for request, diagnosis, or special instructions…"
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition resize-none"
                 />
               </div>
 
@@ -397,81 +390,102 @@ export function RequisitionModal({
               {showItems && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h4
-                      className={cn(
-                        "text-sm font-semibold text-slate-700",
-                        poppins.className,
-                      )}
-                    >
-                      Items
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                      Items{" "}
+                      <span className="text-slate-400 font-semibold">
+                        ({items.length})
+                      </span>
                     </h4>
                     <button
                       type="button"
                       onClick={handleAddItem}
-                      className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 focus:ring-2 focus:ring-emerald-500 rounded"
+                      className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase tracking-wide rounded-lg transition-colors"
                     >
-                      <Plus className="w-4 h-4" /> Add Item
+                      <Plus className="w-3 h-3" />
+                      Add
                     </button>
                   </div>
-                  <div className="space-y-3">
+
+                  <div className="space-y-2">
                     {items.map((item, index) => (
                       <div
                         key={index}
-                        className="bg-slate-50 rounded-lg p-3 border border-slate-200"
+                        className="bg-slate-50 rounded-xl p-2.5 border border-slate-200"
                       >
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {/* Item header */}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+                            Item {index + 1}
+                          </span>
+                          {items.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(index)}
+                              className="p-1 -m-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                              aria-label="Remove item"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Item fields */}
+                        <div className="space-y-2">
+                          {/* Name — full width */}
                           <div>
-                            <label className="block text-[10px] font-medium text-slate-500">
-                              Name *
+                            <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                              Name <span className="text-rose-500">*</span>
                             </label>
                             <input
                               value={item.name}
                               onChange={(e) =>
                                 handleItemChange(index, "name", e.target.value)
                               }
-                              placeholder="Drug/supply name"
-                              className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                              placeholder="Drug or supply name"
+                              className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none transition"
                               required
                             />
                           </div>
-                          <div>
-                            <label className="block text-[10px] font-medium text-slate-500">
-                              Strength
-                            </label>
-                            <input
-                              value={item.strength || ""}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  index,
-                                  "strength",
-                                  e.target.value,
-                                )
-                              }
-                              placeholder="500mg"
-                              className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-medium text-slate-500">
-                              Quantity
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  index,
-                                  "quantity",
-                                  parseInt(e.target.value) || 1,
-                                )
-                              }
-                              className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-slate-900 focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition"
-                            />
-                          </div>
-                          <div className="flex items-end gap-2">
-                            <div className="flex-1">
-                              <label className="block text-[10px] font-medium text-slate-500">
+
+                          {/* Strength + Qty + Unit */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                                Strength
+                              </label>
+                              <input
+                                value={item.strength || ""}
+                                onChange={(e) =>
+                                  handleItemChange(
+                                    index,
+                                    "strength",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="500mg"
+                                className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none transition"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                                Qty
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  handleItemChange(
+                                    index,
+                                    "quantity",
+                                    parseInt(e.target.value) || 1,
+                                  )
+                                }
+                                className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 tabular-nums focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none transition"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">
                                 Unit
                               </label>
                               <input
@@ -483,18 +497,10 @@ export function RequisitionModal({
                                     e.target.value,
                                   )
                                 }
-                                placeholder="tablet"
-                                className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                                placeholder="tab"
+                                className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none transition"
                               />
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveItem(index)}
-                              className="p-1 text-rose-600 hover:text-rose-800 transition disabled:opacity-40"
-                              disabled={items.length === 1}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -503,33 +509,36 @@ export function RequisitionModal({
                 </div>
               )}
 
+              {/* Error */}
               {errorMessage && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2 rounded-lg text-sm">
-                  ❌ {errorMessage}
+                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-[11px] text-rose-700">
+                  <span className="shrink-0">⚠️</span>
+                  <span className="truncate">{errorMessage}</span>
                 </div>
               )}
-
-              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200/80">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                  disabled={submitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-emerald-200/50 transition-all disabled:opacity-50 flex items-center justify-center gap-2 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                >
-                  {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : null}
-                  Submit Request
-                </button>
-              </div>
             </form>
+
+            {/* Footer */}
+            <div className="border-t border-slate-100 p-4 sm:p-5 flex flex-col-reverse sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={submitting}
+                className="w-full sm:flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wide transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="requisition-form"
+                onClick={handleSubmit as any}
+                disabled={submitting}
+                className="w-full sm:flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wide transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
+              >
+                {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {submitting ? "Submitting…" : "Submit Request"}
+              </button>
+            </div>
           </motion.div>
         </div>
       )}

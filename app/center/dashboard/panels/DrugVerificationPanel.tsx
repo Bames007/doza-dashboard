@@ -58,42 +58,25 @@ interface MedicVerifyResponse {
   error?: string;
 }
 
-// ─── Skeleton Components ─────────────────────────────────────────────
+// ─── Skeleton ────────────────────────────────────────────────────────
 
-const HeaderSkeleton = () => (
-  <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 animate-pulse">
-    <div>
-      <div className="flex items-center gap-3 mb-2">
-        <div className="h-8 w-1 rounded-full bg-slate-200" />
-        <div className="h-4 w-48 bg-slate-200 rounded" />
-        <div className="h-5 w-16 bg-slate-200 rounded-full" />
+const PanelSkeleton = () => (
+  <div className="pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto animate-pulse">
+    <div className="mb-3 md:mb-5">
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className="h-5 w-0.5 bg-slate-200 rounded-full" />
+        <div className="h-3 w-32 bg-slate-200 rounded" />
+        <div className="h-4 w-20 bg-slate-200 rounded-full" />
       </div>
-      <div className="h-10 w-64 bg-slate-200 rounded-lg" />
-      <div className="h-5 w-80 bg-slate-100 rounded mt-2" />
+      <div className="h-7 w-56 bg-slate-200 rounded mb-1" />
+      <div className="h-3 w-64 bg-slate-100 rounded" />
     </div>
-    <div className="h-16 w-48 bg-slate-200 rounded-xl" />
-  </div>
-);
-
-const TabsSkeleton = () => (
-  <div className="flex gap-1 bg-slate-100 p-1 rounded-lg animate-pulse">
-    {[1, 2, 3, 4].map((i) => (
-      <div key={i} className="h-10 flex-1 bg-slate-200 rounded-md" />
-    ))}
-  </div>
-);
-
-const ContentSkeleton = () => (
-  <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-6 animate-pulse">
-    <div className="space-y-4">
-      <div className="h-6 w-48 bg-slate-200 rounded" />
-      <div className="h-4 w-full bg-slate-100 rounded" />
-      <div className="h-4 w-3/4 bg-slate-100 rounded" />
-      <div className="grid grid-cols-2 gap-4">
-        <div className="h-20 bg-slate-100 rounded" />
-        <div className="h-20 bg-slate-100 rounded" />
-      </div>
+    <div className="flex gap-1.5 mb-3 md:mb-5 overflow-hidden">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="h-8 w-24 bg-slate-200 rounded-lg shrink-0" />
+      ))}
     </div>
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 h-64" />
   </div>
 );
 
@@ -145,7 +128,6 @@ const DrugVerificationPanel: React.FC = () => {
 
         setIsMedic(true);
 
-        // Transform achievements to the correct shape
         const rawAchievements = data.points?.achievements || [];
         const achievements: Achievement[] = rawAchievements.map(
           (ach, index) => {
@@ -189,7 +171,6 @@ const DrugVerificationPanel: React.FC = () => {
         });
 
         if (data.isRegistered && !data.isMedic) {
-          const statusMsg = data.status ? ` (${data.status})` : "";
           logger.info("User is registered but not yet a medic");
           setError(
             `Your medic account is ${data.status || "pending"}. Please wait for approval.`,
@@ -280,127 +261,112 @@ const DrugVerificationPanel: React.FC = () => {
     {
       id: "authenticity" as const,
       name: "Drug Authenticity",
+      shortName: "Verify",
       icon: Shield,
-      description: "Verify drug authenticity",
     },
     {
       id: "information" as const,
       name: "Drug Information",
+      shortName: "Info",
       icon: FileText,
-      description: "Create comprehensive drug info",
     },
     {
       id: "points" as const,
       name: "My Points",
+      shortName: "Points",
       icon: Award,
-      description: "Track verification points",
     },
     {
       id: "history" as const,
       name: "History",
+      shortName: "History",
       icon: TrendingUp,
-      description: "View verification history",
     },
   ];
 
-  // ─── Loading State ──────────────────────────────────────────────────
+  // ─── Loading ──────────────────────────────────────────────────────
 
   if (dashboardLoading || (loading && !error)) {
-    return (
-      <div
-        className={cn(
-          "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8 px-4 sm:px-0",
-          poppins.className,
-        )}
-      >
-        <div className="max-w-7xl mx-auto space-y-6">
-          <HeaderSkeleton />
-          <TabsSkeleton />
-          <ContentSkeleton />
-        </div>
-      </div>
-    );
+    return <PanelSkeleton />;
   }
 
-  // ─── Not a Medic State ─────────────────────────────────────────────
+  // ─── Not a Medic ──────────────────────────────────────────────────
 
   if (!isMedic && !error) {
     return (
       <div
         className={cn(
-          "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8 px-4 sm:px-0",
+          "pb-24 pt-6 px-3 md:px-6 max-w-3xl mx-auto",
           poppins.className,
         )}
       >
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8 md:p-12 text-center">
-            <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ring-amber-200/50">
-              <UserPlus className="w-12 h-12 text-amber-600" />
-            </div>
-            <h2
-              className={cn(
-                "text-2xl md:text-3xl font-bold text-slate-800 mb-3",
-                bebasNeue.className,
-              )}
-            >
-              Register as a Doza Medic
-            </h2>
-            <p className="text-sm text-slate-600 max-w-md mx-auto mb-6">
-              To access the drug verification system and start earning points,
-              you need to register as a Doza medic.
-            </p>
-            <button
-              onClick={handleRegisterMedic}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold px-8 py-3.5 rounded-xl hover:shadow-xl hover:shadow-emerald-200/50 transition-all inline-flex items-center justify-center gap-2"
-            >
-              <UserPlus className="w-5 h-5" />
-              Register as Doza Medic
-            </button>
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-10 text-center">
+          <div className="w-14 h-14 md:w-16 md:h-16 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <UserPlus className="w-6 h-6 md:w-7 md:h-7 text-amber-600" />
           </div>
+          <h2
+            className={cn(
+              "text-lg md:text-2xl font-bold text-slate-900 mb-2",
+              bebasNeue.className,
+            )}
+          >
+            Register as a Doza Medic
+          </h2>
+          <p className="text-[11px] md:text-xs text-slate-500 max-w-md mx-auto mb-5 leading-relaxed">
+            To access the drug verification system and start earning points, you
+            need to register as a Doza medic.
+          </p>
+          <button
+            onClick={handleRegisterMedic}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] md:text-xs uppercase tracking-wide px-5 md:px-6 py-2.5 md:py-3 rounded-xl transition-colors inline-flex items-center justify-center gap-1.5 shadow-sm"
+          >
+            <UserPlus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            Register as Doza Medic
+          </button>
         </div>
       </div>
     );
   }
 
-  // ─── Error State ────────────────────────────────────────────────────
+  // ─── Error ────────────────────────────────────────────────────────
 
   if (error) {
     return (
       <div
         className={cn(
-          "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8 px-4 sm:px-0",
+          "pb-24 pt-6 px-3 md:px-6 max-w-3xl mx-auto",
           poppins.className,
         )}
       >
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl border border-rose-200/80 shadow-sm p-8 md:p-12 text-center">
-            <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ring-rose-200/50">
-              <AlertCircle className="w-10 h-10 text-rose-600" />
-            </div>
-            <h3
-              className={cn(
-                "text-2xl font-bold text-slate-800 mb-3",
-                bebasNeue.className,
-              )}
+        <div className="bg-white rounded-2xl border border-rose-200 p-6 md:p-10 text-center">
+          <div className="w-14 h-14 md:w-16 md:h-16 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-6 h-6 md:w-7 md:h-7 text-rose-600" />
+          </div>
+          <h3
+            className={cn(
+              "text-lg md:text-xl font-bold text-slate-900 mb-2",
+              bebasNeue.className,
+            )}
+          >
+            Something went wrong
+          </h3>
+          <p className="text-[11px] md:text-xs text-slate-500 mb-5 max-w-md mx-auto leading-relaxed">
+            {error}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <button
+              onClick={handleRetry}
+              className="px-4 md:px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] md:text-xs font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5"
             >
-              Something went wrong
-            </h3>
-            <p className="text-sm text-slate-600 mb-6">{error}</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={handleRetry}
-                className="px-6 py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Try Again
-              </button>
-              <button
-                onClick={handleRegisterMedic}
-                className="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-all"
-              >
-                Register as Medic
-              </button>
-            </div>
+              <RefreshCw className="w-3.5 h-3.5" />
+              Try Again
+            </button>
+            <button
+              onClick={handleRegisterMedic}
+              className="px-4 md:px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-[11px] md:text-xs font-bold uppercase tracking-wide transition-colors"
+            >
+              Register as Medic
+            </button>
           </div>
         </div>
       </div>
@@ -421,121 +387,179 @@ const DrugVerificationPanel: React.FC = () => {
   return (
     <div
       className={cn(
-        "min-h-screen bg-[#F8FAFC] pb-20 pt-4 md:pt-8 px-4 sm:px-0",
+        "pb-24 pt-3 md:pt-6 px-3 md:px-6 max-w-7xl mx-auto",
         poppins.className,
       )}
     >
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* ─── Header ────────────────────────────────────────────────── */}
-        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-8 w-1 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
-              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.25em]">
-                Drug Verification
+      {/* ─── Compact header ─────────────────────────────────── */}
+      <header className="mb-3 md:mb-5">
+        {/* Row 1: eyebrow + badge + refresh */}
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-5 w-0.5 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 uppercase tracking-[0.15em] truncate">
+              Drug Verification
+            </span>
+            {isMedic && (
+              <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                <Shield className="w-2.5 h-2.5" />
+                Verified
               </span>
-              {isMedic && (
-                <span className="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                  Verified Medic
-                </span>
-              )}
-            </div>
-            <h1
+            )}
+          </div>
+          <button
+            onClick={handleRefresh}
+            className="p-1.5 md:p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shrink-0"
+            aria-label="Refresh"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
+          </button>
+        </div>
+
+        {/* Row 2: title */}
+        <h1
+          className={cn(
+            "text-2xl md:text-4xl text-slate-900 leading-none tracking-tight mb-1",
+            bebasNeue.className,
+          )}
+        >
+          Drug Verification
+        </h1>
+        <p className="text-[11px] md:text-xs text-slate-500">
+          Contribute to the drug database and earn rewards
+        </p>
+
+        {/* Row 3: points summary — compact pills */}
+        <div className="mt-3 md:mt-4 grid grid-cols-3 gap-2 md:gap-2.5">
+          <PointsPill
+            label="Points"
+            value={safeUserPoints.totalPoints}
+            tone="emerald"
+            icon={Award}
+          />
+          <PointsPill
+            label="Verified"
+            value={safeUserPoints.verifiedDrugs}
+            tone="emerald"
+            icon={Shield}
+          />
+          <PointsPill
+            label="Pending"
+            value={safeUserPoints.pendingReview}
+            tone="slate"
+            icon={RefreshCw}
+          />
+        </div>
+
+        {/* Level line */}
+        <p className="text-[10px] md:text-[11px] text-slate-500 mt-2">
+          Level:{" "}
+          <span className="font-bold text-emerald-700">
+            {safeUserPoints.level || "Beginner"}
+          </span>
+        </p>
+      </header>
+
+      {/* ─── Tabs (horizontal scroll) ───────────────────────── */}
+      <div className="-mx-3 px-3 md:mx-0 md:px-0 mb-3 md:mb-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "text-4xl md:text-5xl lg:text-6xl text-slate-900 leading-[1.1] tracking-tight",
-                bebasNeue.className,
+                "shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-bold uppercase tracking-wide transition-all whitespace-nowrap",
+                isActive
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
               )}
             >
-              Drug Verification System
-            </h1>
-            <p className="text-sm text-slate-600 mt-2 max-w-md">
-              Contribute to the drug database and earn rewards
-            </p>
-          </div>
+              <Icon className="w-3 h-3" />
+              <span className="hidden sm:inline">{tab.name}</span>
+              <span className="sm:hidden">{tab.shortName}</span>
+            </button>
+          );
+        })}
+      </div>
 
-          {/* Points Summary */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm min-w-[160px] flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl text-white shadow-md shadow-emerald-200/50">
-              <Award className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-                Total Points
-              </p>
-              <p
-                className={cn(
-                  "text-2xl font-bold text-slate-800",
-                  bebasNeue.className,
-                )}
-              >
-                {safeUserPoints.totalPoints?.toLocaleString() || "0"}
-              </p>
-              <p className="text-[10px] text-slate-500">
-                Level: {safeUserPoints.level || "Beginner"}
-              </p>
-            </div>
-          </div>
-        </header>
+      {/* ─── Content ────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        {activeTab === "authenticity" && user && (
+          <DrugAuthenticityTab user={user} center={center} />
+        )}
 
-        {/* ─── Tabs ──────────────────────────────────────────────────── */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/60 shadow-sm">
-          <div className="flex flex-wrap gap-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-                    isActive
-                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-200/50"
-                      : "text-slate-600 hover:text-slate-800 hover:bg-slate-50",
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.name}</span>
-                  <span className="sm:hidden">
-                    {tab.id === "authenticity"
-                      ? "Verify"
-                      : tab.id === "information"
-                        ? "Info"
-                        : tab.id === "points"
-                          ? "Points"
-                          : "History"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {activeTab === "information" && user && (
+          <DrugInformationTab
+            user={user}
+            center={center}
+            onVerificationComplete={handleRefresh}
+          />
+        )}
 
-        {/* ─── Content ────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          {activeTab === "authenticity" && user && (
-            <DrugAuthenticityTab user={user} center={center} />
-          )}
+        {activeTab === "points" && (
+          <UserPointsDashboard points={safeUserPoints} />
+        )}
 
-          {activeTab === "information" && user && (
-            <DrugInformationTab
-              user={user}
-              center={center}
-              onVerificationComplete={handleRefresh}
-            />
-          )}
-
-          {activeTab === "points" && (
-            <UserPointsDashboard points={safeUserPoints} />
-          )}
-
-          {activeTab === "history" && user && (
-            <VerificationHistory medicId={user.id} />
-          )}
-        </div>
+        {activeTab === "history" && user && (
+          <VerificationHistory medicId={user.id} />
+        )}
       </div>
     </div>
   );
 };
+
+// ─── Points Pill ─────────────────────────────────────────────────────
+
+function PointsPill({
+  label,
+  value,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  tone: "emerald" | "slate";
+  icon: any;
+}) {
+  const toneStyles: Record<string, { bg: string; iconBg: string }> = {
+    emerald: {
+      bg: "bg-emerald-50 border-emerald-200 text-emerald-700",
+      iconBg: "bg-emerald-100 text-emerald-700",
+    },
+    slate: {
+      bg: "bg-slate-50 border-slate-200 text-slate-700",
+      iconBg: "bg-slate-100 text-slate-600",
+    },
+  };
+  const style = toneStyles[tone];
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2 px-2.5 md:px-3 py-2 rounded-xl border",
+        style.bg,
+      )}
+    >
+      <div className="min-w-0">
+        <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "text-lg md:text-xl font-bold tabular-nums leading-none mt-0.5",
+            bebasNeue.className,
+          )}
+        >
+          {value.toLocaleString()}
+        </p>
+      </div>
+      <div className={cn("p-1.5 rounded-lg shrink-0", style.iconBg)}>
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+    </div>
+  );
+}
 
 export default DrugVerificationPanel;
